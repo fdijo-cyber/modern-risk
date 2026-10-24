@@ -1,6 +1,6 @@
 # Development status — v0.3
 
-GitHub: public source upload authorized to fdijo-cyber/modern-risk. Deployment: not configured. This file describes functioning code, not aspiration.
+GitHub: complete v0.3 source published on public main at fdijo-cyber/modern-risk. Deployment: not configured. This file describes functioning code, not aspiration.
 
 ## Delivered and verified locally
 
@@ -42,7 +42,7 @@ GitHub: public source upload authorized to fdijo-cyber/modern-risk. Deployment: 
 | 27 Roadmap | Runnable end-to-end vertical slice | Finish remaining milestones in development-roadmap.md |
 | 28 Complete scenario | Supported orders individually work | Exact full acceptance scenario awaits richer military, spending and alliance systems |
 | 29–30 Product | Source, setup, tests and honest feature ledger | Release-readiness of complete specified product |
-| 31 GitHub | .gitignore, CI, instructions | Repository creation, push/PR, branch protection, remote CI and deployment |
+| 31 GitHub | Public repository, complete source on main, clean-clone verification, passing remote CI | Ongoing feature PRs, branch protection and deployment |
 
 ## Known limitations
 
@@ -60,11 +60,11 @@ GitHub: public source upload authorized to fdijo-cyber/modern-risk. Deployment: 
 1. Expand meaningful edge-case coverage for three-sided fights, lost origins and production interruption.
 2. Replace capability-only sessions with production identities and rate/abuse controls appropriate to hosting.
 3. Implement PostgreSQL repository adapter and durable round workers before distributed deployment.
-4. Introduce named formations, a complete equipment catalog and logistics graph.
-5. Implement constrained LLM adapters and grounded adviser conversations after mechanical rules stabilize.
-6. Commission geographic artwork, full WNN presentation, accessibility/browser QA and balance simulations.
+4. Introduce named land formations, finish the equipment catalog and deepen logistics routing.
+5. Validate live-provider conversations and expand specialist advisers after mechanical rules stabilize.
+6. Refine geographic artwork, add full WNN presentation, complete accessibility/tablet QA and balance simulations.
 
-Latest validated remote commit: none. See validation.md for local checks. The complete original prompt is retained without silently dropping requirements.
+Latest validated source commit: `1f10d00a91394ea3b827d50a86323f770b1613a2`. Clean clone: 44 tests and build passed. GitHub Actions run 40142123298 passed both validation and PostgreSQL migration jobs. See validation.md for local checks. The complete original prompt is retained without silently dropping requirements.
 
 ## v0.2 completed additions
 

@@ -29,3 +29,11 @@ Not run: a deployed production session, Docker image build, PostgreSQL migration
 - Chromium visual QA inspected the geographic map, troop/tank/aircraft/fleet symbols and original coastlines. Pointer territory selection updated the contextual inspector; an undiscovered enemy showed FORCES UNKNOWN. Zoom, sea links and the military-intelligence layer updated correctly.
 - Pinch handling is implemented but physical iPad/Safari touch testing remains unverified.
 - Public source publication is now explicitly authorized by the user. No production hosting/domain deployment is implied by this upload.
+
+## Verified public import
+
+- Source commit `1f10d00a91394ea3b827d50a86323f770b1613a2` is on public `fdijo-cyber/modern-risk` main.
+- All 39 remote file blob hashes match the validated local source; no data/session/reference-image files were uploaded.
+- A fresh shallow clone at that exact commit passed all 44 tests and `npm run build`.
+- GitHub Actions run [40142123298](https://github.com/fdijo-cyber/modern-risk/actions/runs/40142123298) completed successfully, including the PostgreSQL migration job.
+- This record is a documentation follow-up to that tested source commit. No production/domain deployment is claimed.
