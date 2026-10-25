@@ -1,6 +1,6 @@
 {
   "name": "modern-risk",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,6 +12,7 @@
     "test": "node --test tests/*.test.mjs",
     "check": "node scripts/check.mjs",
     "build": "node scripts/check.mjs",
-    "dev": "node apps/server/server.mjs"
+    "dev": "node apps/server/server.mjs",
+    "chair:check": "node --test tests/chair.test.mjs"
   }
 }

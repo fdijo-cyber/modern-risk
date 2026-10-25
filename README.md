@@ -1,3 +1,9 @@
+# v0.7 Crisis Chair
+
+The Presidential Office now submits open-ended directives to the structured Crisis Chair. Gemini must be configured; provider failures defer execution without inventing results. Solo directives settle immediately. Multiplayer directives are sealed against the monthly snapshot and settle together when the host advances the month. Historical questions are read-only.
+
+See [Crisis Chair behavior and limits](docs/crisis-chair.md). Run `npm run chair:check` for the combined invasion/blockade/investment/ultimatum/policy acceptance test.
+
 # MODERN RISK — v0.6
 
 An illustrated 42-territory Risk board combined with an AI-adjudicated MUN crisis simulation. Exactly five main tabs: **Map & Public News**, **Presidential Office**, **Foreign Affairs**, **Bank**, and **Announcements & Reports**. Existing multiplayer rooms and SQLite records are preserved.

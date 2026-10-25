@@ -1,3 +1,4 @@
+import {prepareChair,submitChair,lockChairRound,resolveChairRound,respondUltimatum} from '../../packages/simple-engine/chair.mjs';
 import {replyDiplomat} from '../../packages/simple-engine/diplomat.mjs';
 import {existsSync} from 'node:fs';
 import {seedSimple,simpleView,resolveSimple,submitDirective,adjudicateDirective,makeDirective,decideDirective,reviewPlan,sendOfficial,proposeAgreement} from '../../packages/simple-engine/index.mjs';
@@ -22,7 +23,7 @@ const store=openStore(process.env.DB_PATH??resolve('data/modern-risk.sqlite'));
 const token=()=>randomBytes(24).toString('base64url');const hash=t=>createHash('sha256').update(t).digest('hex');
 const equal=(a,b)=>typeof a==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const fail=(ok,msg)=>{if(!ok)throw new Error(msg);};
-function finishRound(room){const previous=room.game.round;room.game=room.game.ruleset==='simple'?resolveSimple(room.game):resolveRound(room.game);room.players.forEach(p=>p.ready=false);room.deadline=room.timer&&room.game.phase==='planning'?Date.now()+room.timer*1000:null;return store.commitRound(room,previous,room.revision);}
+function finishRound(room){const previous=room.game.round;room.game=room.game.ruleset==='simple'?resolveChairRound(room.game):resolveRound(room.game);room.players.forEach(p=>p.ready=false);room.deadline=room.timer&&room.game.phase==='planning'?Date.now()+room.timer*1000:null;return store.commitRound(room,previous,room.revision);}
 function roomView(r,p){return {code:r.code,name:r.name,status:r.status,revision:r.revision,host:p.id===r.host,you:p.id,players:r.players.map(x=>({id:x.id,name:x.name,country:x.country,ready:x.ready})),mode:r.mode??'multiplayer',aiAvailable:aiConfigured(),aiProvider:aiSettings().provider,aiModel:aiSettings().model,maxPlayers:r.maxPlayers,deadline:r.deadline,timer:r.timer,game:r.status==='active'?(r.game.ruleset==='simple'?simpleView(r.game,p.country):view(r.game,p.country)):null};}
 const requests=new Map();
 async function body(req){let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>100000)throw new Error('Request too large');}try{return JSON.parse(raw||'{}');}catch{throw new Error('Invalid JSON');}}
@@ -57,10 +58,11 @@ export const server=http.createServer(async(req,res)=>{
     fail(room.status==='active'&&room.game.ruleset==='simple','Start a new simplified match to use the new directive workflow');
     const country=p.country;const active=()=>{fail(room.game.phase==='planning','Planning is closed');fail(!room.players.find(x=>x.id===p.id).ready,'Unsubmit before making changes');};
     const endpoint=url.pathname.slice('/api/simple/'.length);
+    if(endpoint==='history'){const planned=await prepareChair(room.game,country,'Explain '+String(data.question??''));return send(200,{answer:planned.answer,room:roomView(room,p)});}
     if(endpoint==='submit'||endpoint==='interpret'){
-     active();room.directiveReceipts??={};const receiptKey=p.id+':'+data.requestId;if(data.requestId&&room.directiveReceipts[receiptKey])return send(200,{directive:room.game.countries[country].directives.find(d=>d.id===room.directiveReceipts[receiptKey]),room:roomView(room,p)});const expectedRound=room.game.round;const planned=await interpretLongDirective(room.game,country,data.text,{region:data.region});
+     active();room.directiveReceipts??={};const receiptKey=p.id+':'+data.requestId;if(data.requestId&&room.directiveReceipts[receiptKey])return send(200,{directive:room.game.countries[country].directives.find(d=>d.id===room.directiveReceipts[receiptKey]),room:roomView(room,p)});const expectedRound=room.game.round;if(room.mode!=='solo')lockChairRound(room.game);const planned=await prepareChair(room.game.chairRound?.snapshot??room.game,country,data.text,{region:data.region});
      room=store.load(code);active();fail(room.game.round===expectedRound,'Month changed during analysis. Nothing was executed; submit in the new month');
-     room.directiveReceipts??={};if(data.requestId&&room.directiveReceipts[receiptKey])return send(200,{directive:room.game.countries[country].directives.find(d=>d.id===room.directiveReceipts[receiptKey]),room:roomView(room,p)});const settled=adjudicateDirective(room.game,country,{text:data.text,...planned});room.game=settled.game;const directive=settled.directive;if(data.requestId)room.directiveReceipts[receiptKey]=directive.id;store.save(room,room.revision);return send(200,{directive,room:roomView(room,p)});
+     room.directiveReceipts??={};if(data.requestId&&room.directiveReceipts[receiptKey])return send(200,{directive:room.game.countries[country].directives.find(d=>d.id===room.directiveReceipts[receiptKey]),room:roomView(room,p)});if(room.mode!=='solo')lockChairRound(room.game);const settled=submitChair(room.game,country,data.text,planned,{sealed:room.mode!=='solo'});room.game=settled.game;const directive=settled.directive;if(data.requestId&&directive.id!=='history')room.directiveReceipts[receiptKey]=directive.id;store.save(room,room.revision);return send(200,{directive,room:roomView(room,p)});
     }
     if(endpoint==='edit'){
      active();const d=room.game.countries[country].directives.find(d=>d.id===data.id);fail(d&&['review','awaiting_bank','clarification'].includes(d.status)&&d.round===room.game.round,'This directive cannot be edited');
@@ -80,6 +82,7 @@ export const server=http.createServer(async(req,res)=>{
     }else if(endpoint==='extract-agreement'){
      active();fail(room.game.countries[data.country]&&data.country!==country,'Choose a recipient');const expectedRound=room.game.round,terms=await extractAgreement(room.game,country,data.country);room=store.load(code);active();fail(room.game.round===expectedRound,'Month changed; re-extract the agreement');
      const settled=adjudicateDirective(room.game,country,{text:'Diplomatic agreement: '+(terms.summary??terms.kind),orders:[{action:'treaty',country:data.country,...terms}],assumptions:['Submitted from the conversation; counterpart consent remains required.']});room.game=settled.game;store.save(room,room.revision);return send(200,{directive:settled.directive,room:roomView(room,p)});
+    }else if(endpoint==='respond-ultimatum'){active();room.game=respondUltimatum(room.game,country,data.id,data.decision,{sealed:room.mode!=='solo'});
     }else if(endpoint==='respond-agreement'){
      active();const a=room.game.agreements.find(a=>a.id===data.id&&a.parties.includes(country)&&['offered','counteroffer'].includes(a.status));fail(a,'Agreement unavailable');
      if(data.decision==='reject'){a.status='rejected';a.responseReason='Declined by '+room.game.countries[country].name;sendOfficial(room.game,country,a.parties.find(id=>id!==country),'We reject '+a.title+'.');}
@@ -110,7 +113,7 @@ export const server=http.createServer(async(req,res)=>{
     const latest=store.load(code),national=latest.game.countries[p.country];national.chat??=[];national.chat.push({target,role:'user',text:data.question,round:latest.game.round},{target,role:'assistant',text:answer.text,source:answer.source,round:latest.game.round});national.chat=national.chat.slice(-80);store.save(latest,latest.revision);
     return send(200,{...answer,chat:national.chat});
    }
-   if(url.pathname==='/api/start'){fail(p.id===room.host,'Host only');fail(room.status==='lobby','Already started');fail(room.players.length>=2||data.practice===true,'Join at least two human players or start practice');room.status='active';for(const player of room.players)room.game.countries[player.country].human=true;room.deadline=room.timer?Date.now()+room.timer*1000:null;}
+   if(url.pathname==='/api/start'){fail(p.id===room.host,'Host only');fail(room.status==='lobby','Already started');fail(room.players.length>=2||data.practice===true,'Join at least two human players or start practice');room.status='active';for(const player of room.players)room.game.countries[player.country].human=true;if(room.game.ruleset==='simple')lockChairRound(room.game);room.deadline=room.timer?Date.now()+room.timer*1000:null;}
    else{
     fail(room.status==='active'&&room.game.phase==='planning','Planning unavailable');
     if(url.pathname==='/api/advance'){fail(p.id===room.host,'Host only');fail(data.round===room.game.round,'Round already advanced; refresh');fail(room.players.every(x=>x.ready),'All players must submit directives');room=finishRound(room);return send(200,roomView(room,p));}
