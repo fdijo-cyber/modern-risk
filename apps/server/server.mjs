@@ -4,7 +4,7 @@ import {seedSimple,simpleView,resolveSimple,submitDirective,makeDirective,decide
 import {interpretLongDirective,extractAgreement} from '../../packages/simple-engine/planner.mjs';
 import {modelText} from '../../packages/ai-engine/service.mjs';
 import {parseMessageRequest,deliverMessage} from '../../packages/diplomacy-engine/messages.mjs';
-import {draftOfficialMessage,converse,aiConfigured} from '../../packages/ai-engine/service.mjs';
+import {draftOfficialMessage,converse,aiConfigured,aiSettings} from '../../packages/ai-engine/service.mjs';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -23,7 +23,7 @@ const token=()=>randomBytes(24).toString('base64url');const hash=t=>createHash('
 const equal=(a,b)=>typeof a==='string'&&a.length===b.length&&timingSafeEqual(Buffer.from(a),Buffer.from(b));
 const fail=(ok,msg)=>{if(!ok)throw new Error(msg);};
 function finishRound(room){const previous=room.game.round;room.game=room.game.ruleset==='simple'?resolveSimple(room.game):resolveRound(room.game);room.players.forEach(p=>p.ready=false);room.deadline=room.timer&&room.game.phase==='planning'?Date.now()+room.timer*1000:null;return store.commitRound(room,previous,room.revision);}
-function roomView(r,p){return {code:r.code,name:r.name,status:r.status,revision:r.revision,host:p.id===r.host,you:p.id,players:r.players.map(x=>({id:x.id,name:x.name,country:x.country,ready:x.ready})),mode:r.mode??'multiplayer',aiAvailable:aiConfigured(),maxPlayers:r.maxPlayers,deadline:r.deadline,timer:r.timer,game:r.status==='active'?(r.game.ruleset==='simple'?simpleView(r.game,p.country):view(r.game,p.country)):null};}
+function roomView(r,p){return {code:r.code,name:r.name,status:r.status,revision:r.revision,host:p.id===r.host,you:p.id,players:r.players.map(x=>({id:x.id,name:x.name,country:x.country,ready:x.ready})),mode:r.mode??'multiplayer',aiAvailable:aiConfigured(),aiProvider:aiSettings().provider,aiModel:aiSettings().model,maxPlayers:r.maxPlayers,deadline:r.deadline,timer:r.timer,game:r.status==='active'?(r.game.ruleset==='simple'?simpleView(r.game,p.country):view(r.game,p.country)):null};}
 const requests=new Map();
 async function body(req){let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>100000)throw new Error('Request too large');}try{return JSON.parse(raw||'{}');}catch{throw new Error('Invalid JSON');}}
 export const server=http.createServer(async(req,res)=>{

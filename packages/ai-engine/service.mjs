@@ -1,13 +1,28 @@
 import {composeMessage} from '../diplomacy-engine/messages.mjs';
 const LIMIT=6000;
-export function aiConfigured(env=process.env){return !!(env.OPENAI_API_KEY&&env.OPENAI_MODEL);}
-export async function modelText({instructions,input,env=process.env,fetchImpl=fetch,maxOutputTokens=1200,outputLimit=LIMIT}){
- if(!aiConfigured(env))return {text:null,source:'offline',reason:'Language-model provider is not configured'};
+export function aiSettings(env=process.env){
+ const provider=(env.AI_PROVIDER||(env.GEMINI_API_KEY?'gemini':'openai')).trim().toLowerCase();
+ const key=provider==='gemini'?env.GEMINI_API_KEY:provider==='openai'?env.OPENAI_API_KEY:null;
+ const model=provider==='gemini'?(env.GEMINI_MODEL||'gemini-3.1-flash-lite'):env.OPENAI_MODEL;
+ return {provider,model:model??null,configured:!!(key?.trim()&&model?.trim()&&['gemini','openai'].includes(provider))};
+}
+export function aiConfigured(env=process.env){return aiSettings(env).configured;}
+export async function modelText({instructions,input,env=process.env,fetchImpl=fetch,maxOutputTokens=1200,outputLimit=LIMIT,jsonMode=false}){
+ const config=aiSettings(env),offline=reason=>({text:null,source:'offline',provider:config.provider,reason});
+ if(!config.configured)return offline('Language-model provider is not configured. Set AI_PROVIDER=gemini and GEMINI_API_KEY in .env, or configure OpenAI.');
  try{
-  const res=await fetchImpl('https://api.openai.com/v1/responses',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${env.OPENAI_API_KEY}`},signal:AbortSignal.timeout(15000),body:JSON.stringify({model:env.OPENAI_MODEL,instructions,input:JSON.stringify(input),max_output_tokens:maxOutputTokens,store:false})});
-  if(!res.ok)throw new Error('Provider unavailable');const data=await res.json();const text=(data.output??[]).filter(x=>x.type==='message').flatMap(x=>x.content??[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n').trim();
-  if(!text||text.length>outputLimit)throw new Error('Invalid output');return {text,source:'language-model',reason:null};
- }catch{return {text:null,source:'offline',reason:'Provider unavailable; deterministic fallback used'};}
+  const gemini=config.provider==='gemini';
+  const endpoint=gemini?`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent`:'https://api.openai.com/v1/responses';
+  const payload=gemini?{systemInstruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:JSON.stringify(input)}]}],generationConfig:{maxOutputTokens,...(jsonMode?{responseMimeType:'application/json'}:{})}}:{model:config.model,instructions,input:JSON.stringify(input),max_output_tokens:maxOutputTokens,store:false};
+  const headers={'Content-Type':'application/json',...(gemini?{'x-goog-api-key':env.GEMINI_API_KEY}:{Authorization:`Bearer ${env.OPENAI_API_KEY}`})};
+  const res=await fetchImpl(endpoint,{method:'POST',headers,signal:AbortSignal.timeout(30000),body:JSON.stringify(payload)});
+  if(!res.ok){const reason=res.status===429?'Quota or rate limit reached. Wait and check the project quota in your provider dashboard.':res.status===401||res.status===403?'API key rejected or this project lacks access. Check the key and project permissions.':res.status===404?'Model not available. Check GEMINI_MODEL or OPENAI_MODEL.':res.status===400?'Provider rejected the request. Check model compatibility and project availability.':'Provider temporarily unavailable.';return offline(`${config.provider}: ${reason} Local fallback used.`);}
+  const data=await res.json();let text;
+  if(gemini){const candidate=data.candidates?.[0];if(!candidate||candidate.finishReason&&candidate.finishReason!=='STOP')return offline('Gemini returned a blocked, incomplete or empty response. Local fallback used.');text=(candidate.content?.parts??[]).filter(p=>!p.thought&&typeof p.text==='string').map(p=>p.text).join('\n').trim();}
+  else text=(data.output??[]).filter(x=>x.type==='message').flatMap(x=>x.content??[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n').trim();
+  if(!text||text.length>outputLimit)return offline(`${config.provider}: Empty or oversized response. Local fallback used.`);
+  return {text,source:'language-model',provider:config.provider,reason:null};
+ }catch{return offline(`${config.provider}: Connection failed or timed out. Local fallback used.`);}
 }
 export async function draftOfficialMessage({sender,recipient,request,template,env,fetchImpl}){
  const fallback=composeMessage({sender,recipient,request,template});

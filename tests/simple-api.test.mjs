@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';import {spawn} from 'node:child_process';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
 test('simplified HTTP flow: submit → automatic funding → month; messages and automatic agreement consent',async()=>{
- const dir=mkdtempSync(join(tmpdir(),'risk-simple-'));const child=spawn(process.execPath,['apps/server/server.mjs'],{env:{...process.env,PORT:'0',DB_PATH:join(dir,'db.sqlite'),OPENAI_API_KEY:'',OPENAI_MODEL:''}});let base;
+ const dir=mkdtempSync(join(tmpdir(),'risk-simple-'));const child=spawn(process.execPath,['apps/server/server.mjs'],{env:{...process.env,AI_PROVIDER:'openai',GEMINI_API_KEY:'',PORT:'0',DB_PATH:join(dir,'db.sqlite'),OPENAI_API_KEY:'',OPENAI_MODEL:''}});let base;
  try{base=await new Promise((yes,no)=>{const timeout=setTimeout(()=>no(new Error('timeout')),10000);child.stdout.on('data',d=>{const m=/http:\/\/[^\s]+/.exec(String(d));if(m){clearTimeout(timeout);yes(m[0]);}});child.once('exit',()=>no(new Error('server exited')));});
  const call=async(path,data,token)=>{const r=await fetch(base+'/api/'+path,{method:data?'POST':'GET',headers:{...(data?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:data?JSON.stringify(data):undefined});return {status:r.status,body:r.status===204?null:await r.json()};};
  const a=(await call('create',{name:'A',country:'us',mode:'multiplayer',maxPlayers:2,maxRounds:3})).body,code=a.room.code;assert.equal(a.room.status,'lobby');

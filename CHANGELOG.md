@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1
+
+- Added native Gemini provider for directives, diplomatic conversations and agreement extraction.
+- Added a private .env setup guide and ai:check connection command.
+- Explicit invalid-key, quota and unavailable-model notices, with safe local fallback.
+- Preserved OpenAI support and added mock Gemini integration regression tests.
+
 ## 0.5.0
 
 - Submit once: automatic budget reservations, inferred defaults, per-clause failures and monthly execution; removed editing and double approval from the active client.

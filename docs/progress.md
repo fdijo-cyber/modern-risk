@@ -1,3 +1,7 @@
+# Gemini provider update — v0.5.1
+
+Gemini native generateContent support now powers all shared live AI features. Added provider selection, default gemini-3.1-flash-lite model, JSON output mode for directive/extraction calls, safe key/quota/model error messages and `npm run ai:check`. Setup instructions are in docs/gemini-setup.md. 87 tests and syntax/build checks pass locally. Live connectivity must be checked on the user's Mac with their private key; no key was received or committed.
+
 # Current update — v0.5
 
 The active simplified interface now uses five tabs and a single directive submission. It infers defaults, records failures without clarification prompts, reserves resources automatically and executes scheduled actions on month advancement. Office results give actual per-action outcomes and spending. Public Announcements archives monthly public consequences while protecting private intelligence and conversations. War declarations and treaty proposals are directives. Foreign Affairs supports contextual live-model conversations and a visibly labeled local negotiator. `.env` auto-loads at startup.
