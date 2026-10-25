@@ -24,3 +24,9 @@ test('sea connections, labels, transform and contextual inspector follow view co
  assert.ok(svg.includes('translate(-50 -70) scale(2)'));assert.ok(svg.includes('class="sea-link"'));assert.ok(!svg.includes('class="territory-name"'));
  const html=mapPageMarkup({game:g,room:{},selected:37,layer:'military',zoom:1,pan:{x:0,y:0},routes:false,labels:true});assert.ok(html.includes('FORCES UNKNOWN'));assert.ok(html.includes('Send reconnaissance'));assert.ok(html.includes('Find territory'));
 });
+
+test('force displays conserve active own blockade groups and exclude foreign or expired deployments',async()=>{
+ const {blockadeLocations,blockadeGroups}=await import('../apps/web/public/simple-rules.js');
+ const game={you:{id:'us'},regions:[{id:8,name:'Central America'}],blockades:[{country:'us',status:'active',target:8,units:{navy:2}},{country:'us',status:'completed',target:8,units:{navy:3}},{country:'china',status:'active',target:8,units:{navy:9}}]};
+ assert.equal(blockadeGroups(game),2);assert.equal(blockadeLocations(game).length,1);assert.match(blockadeLocations(game)[0].name,/Central America/);assert.equal(blockadeGroups({you:{id:'us'},regions:[]}),0);
+});
