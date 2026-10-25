@@ -7,13 +7,13 @@ export function aiSettings(env=process.env){
  return {provider,model:model??null,configured:!!(key?.trim()&&model?.trim()&&['gemini','openai'].includes(provider))};
 }
 export function aiConfigured(env=process.env){return aiSettings(env).configured;}
-export async function modelText({instructions,input,env=process.env,fetchImpl=fetch,maxOutputTokens=1200,outputLimit=LIMIT,jsonMode=false,timeoutMs=15000,retryDelay=ms=>new Promise(resolve=>setTimeout(resolve,ms))}){
+export async function modelText({instructions,input,env=process.env,fetchImpl=fetch,maxOutputTokens=1200,outputLimit=LIMIT,jsonMode=false,responseSchema=null,timeoutMs=15000,retryDelay=ms=>new Promise(resolve=>setTimeout(resolve,ms))}){
  const config=aiSettings(env),offline=reason=>({text:null,source:'offline',provider:config.provider,reason});
  if(!config.configured)return offline('Language-model provider is not configured. Set AI_PROVIDER=gemini and GEMINI_API_KEY in .env, or configure OpenAI.');
  try{
   const gemini=config.provider==='gemini';
   const endpoint=gemini?`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(config.model)}:generateContent`:'https://api.openai.com/v1/responses';
-  const payload=gemini?{systemInstruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:JSON.stringify(input)}]}],generationConfig:{maxOutputTokens,...(jsonMode?{responseMimeType:'application/json'}:{})}}:{model:config.model,instructions,input:JSON.stringify(input),max_output_tokens:maxOutputTokens,store:false};
+  const payload=gemini?{systemInstruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:JSON.stringify(input)}]}],generationConfig:{maxOutputTokens,...(jsonMode?{responseMimeType:'application/json',...(responseSchema?{responseSchema}:{})}:{})}}:{model:config.model,instructions,input:JSON.stringify(input),max_output_tokens:maxOutputTokens,store:false};
   const headers={'Content-Type':'application/json',...(gemini?{'x-goog-api-key':env.GEMINI_API_KEY}:{Authorization:`Bearer ${env.OPENAI_API_KEY}`})};
   let res;for(let attempt=0;attempt<3;attempt++){res=await fetchImpl(endpoint,{method:'POST',headers,signal:AbortSignal.timeout(timeoutMs),body:JSON.stringify(payload)});if(res.ok||![500,502,503,504].includes(res.status)||attempt===2)break;await retryDelay(300*(attempt+1));}
   if(!res.ok){const reason=res.status===429?'Quota or rate limit reached. Wait and check the project quota in your provider dashboard.':res.status===401||res.status===403?'API key rejected or this project lacks access. Check the key and project permissions.':res.status===404?'Model not available. Check GEMINI_MODEL or OPENAI_MODEL.':res.status===400?'Provider rejected the request. Check model compatibility and project availability.':'Provider temporarily unavailable; retry after a short wait.';return offline(`${config.provider}: HTTP ${res.status}. ${reason} No AI outcome was generated.`);}
