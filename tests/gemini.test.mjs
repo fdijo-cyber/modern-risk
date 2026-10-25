@@ -33,3 +33,9 @@ test('temporary Gemini server failures retry safely, preserve HTTP status and ne
  try {const out=await modelText({env,input:{},instructions:'Chair',timeoutMs:45000,fetchImpl:async()=>response('OK')});assert.equal(out.text,'OK');assert.equal(timeout,45000);}finally{AbortSignal.timeout=previous;}
  const out=await modelText({env,input:{},instructions:'Chair',fetchImpl:async()=>({ok:true,json:async()=>({candidates:[{finishReason:'MAX_TOKENS'}]})})});assert.match(out.reason,/MAX_TOKENS/);assert.equal(out.text,null);
  });
+
+test('Gemini structured output schema is forwarded only for JSON generation',async()=>{
+ let config;const schema={type:'OBJECT',properties:{kind:{type:'STRING'}},required:['kind']};
+ await modelText({env,instructions:'Test',input:{},jsonMode:true,responseSchema:schema,fetchImpl:async(_,opts)=>{config=JSON.parse(opts.body).generationConfig;return response('{\"kind\":\"question\"}');}});
+ assert.deepEqual(config.responseSchema,schema);
+});
