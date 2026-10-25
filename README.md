@@ -52,7 +52,9 @@ Trade-route markers include 28 representative chokepoints and economic sites: Ho
 
 ## Live AI
 
-Set **OPENAI_API_KEY** and **OPENAI_MODEL** in the server environment to enable broad narrative interpretation, general diplomatic replies and AI extraction of agreement terms. Never enter keys in the browser or commit them. Missing credentials/provider failures produce explicit offline mode. No live model call is included in automated verification; the provider contract is tested with a mock transport.
+Gemini and OpenAI are supported. For a Google AI Studio key, follow [the Mac setup guide](docs/gemini-setup.md). Set `AI_PROVIDER=gemini`, `GEMINI_API_KEY`, and optionally `GEMINI_MODEL` (default `gemini-3.1-flash-lite`) in your local `.env`. Run `npm run ai:check`, then restart the server. This powers narrative directives, diplomatic replies and agreement extraction through the same adapter.
+
+For OpenAI, set `AI_PROVIDER=openai`, `OPENAI_API_KEY` and `OPENAI_MODEL`. Without an explicit provider, a configured Gemini key selects Gemini; otherwise OpenAI remains the default. Keys remain server-side, are sent only in authentication headers and are never included in room views. Missing credentials, rate limits and provider failures produce explicit local fallback notices. Free-tier eligibility and quotas are controlled by Google; enabling a paid project can incur charges. No live credentials were supplied during development; adapter requests are verified with mock transports.
 
 Offline mode handles common movement, recruitment, buildings, scouting, messages, loans, and policy prose, with disclosed defaults. It cannot faithfully interpret unlimited arbitrary prose. The AI interprets; authoritative server rules calculate costs, validate resources and execute scheduled actions when the month advances.
 
