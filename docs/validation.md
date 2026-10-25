@@ -37,3 +37,16 @@ Not run: a deployed production session, Docker image build, PostgreSQL migration
 - A fresh shallow clone at that exact commit passed all 44 tests and `npm run build`.
 - GitHub Actions run [40142123298](https://github.com/fdijo-cyber/modern-risk/actions/runs/40142123298) completed successfully, including the PostgreSQL migration job.
 - This record is a documentation follow-up to that tested source commit. No production/domain deployment is claimed.
+
+## v0.4 directive-first redesign
+
+- Automated coverage now includes simplified money/units/buildings, dual approval, spending and group reservations, conditional non-execution, hidden scouting ranges, loan schedules/debt ceilings, agreement consent/payment direction, authoritative model-price validation, offline clarification and 24-month AI/resource invariants.
+- A new HTTP integration test exercises interpretation, Office approval, Bank authorization, blocked legacy bypasses, unchanged-state 204 responses, private projections, idempotent charged chat, agreement extraction and monthly outcomes.
+- Browser QA verified the four-tab interface, $1,500 start, one persistent editor, priced refinery/scouting prose directive, separate Bank approval, resource reservations, real monthly payment, scouting results and private briefing.
+- A second browser tab sent diplomatic messages and extracted a proposal while the original Office draft remained intact. It also survived month advancement and tab navigation.
+- The active map has 42 paths, no SVG filters/shadows and requestAnimationFrame camera writes; no full-map replacement on remote revisions. Physical-device FPS and Safari/iPad touch performance remain unverified.
+- General narrative/model interpretation was tested via the provider contract with a mock; live AI credentials/calls are not configured or claimed.
+
+Force-roster expansion adds checks for a 30–32 initial national total in every government, privacy of reserves, paid mobilization conservation, duplicate reserve commitments, standing down, aircraft/naval base requirements, natural mobilization wording, different country mixes and real national advantage effects.
+
+Final v0.4 validation: **71 automated tests pass** and build validation passes. Browser verified the new US inventory of 32 groups (17 deployed / 15 reserve), regional six-type roster, group sizes and the national air advantage. Other national totals and reserve mobilization/standing-down are covered in engine tests.

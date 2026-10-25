@@ -3,8 +3,8 @@ test('multiplayer API persists rounds, enforces host and classified views',async
  const dir=mkdtempSync(join(tmpdir(),'mr-api-'));const child=spawn(process.execPath,['apps/server/server.mjs'],{env:{...process.env,PORT:'0',DB_PATH:join(dir,'db.sqlite')}});let stderr='';child.stderr.on('data',d=>stderr+=d);let base;
  try{base=await new Promise((yes,no)=>{const timeout=setTimeout(()=>no(new Error('Server timeout '+stderr)),10000);child.on('exit',()=>{clearTimeout(timeout);no(new Error('Server exited '+stderr));});child.stdout.on('data',d=>{const m=/http:\/\/[^\s]+/.exec(String(d));if(m){clearTimeout(timeout);yes(m[0]);}});});
  const call=async(path,data,token)=>{const r=await fetch(base+'/api/'+path,{method:data?'POST':'GET',headers:{...(data?{'Content-Type':'application/json'}:{}),...(token?{Authorization:`Bearer ${token}`}:{})},body:data?JSON.stringify(data):undefined});return {status:r.status,body:await r.json()};};
- const a=(await call('create',{name:'A',country:'us',maxRounds:2})).body;assert.ok(a.token);const code=a.room.code;
- const solo=(await call('create',{name:'Solo',country:'china',mode:'solo'})).body;assert.equal(solo.room.status,'active');assert.equal(solo.room.game.countries.filter(c=>c.human).length,1);assert.equal((await call('join',{code:solo.room.code,name:'Intruder',country:'us'})).status,400);
+ const a=(await call('create',{name:'A',country:'us',maxRounds:2,ruleset:'legacy'})).body;assert.ok(a.token);const code=a.room.code;
+ const solo=(await call('create',{name:'Solo',country:'china',mode:'solo',ruleset:'legacy'})).body;assert.equal(solo.room.status,'active');assert.equal(solo.room.game.countries.filter(c=>c.human).length,1);assert.equal((await call('join',{code:solo.room.code,name:'Intruder',country:'us'})).status,400);
  const b=(await call('join',{code,name:'B',country:'eu'})).body;assert.ok(b.token);
  assert.equal((await call('start',{code},b.token)).status,400);assert.equal((await call('start',{code},a.token)).status,200);
  assert.equal((await call('state?code='+code)).status,400);
