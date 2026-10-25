@@ -1,6 +1,6 @@
-# MODERN RISK — v0.5
+# MODERN RISK — v0.6
 
-A small, directive-first geopolitical strategy game. The main interface has **five tabs**: Map, Presidential Office, Bank, Foreign Affairs, and Public Announcements.
+An illustrated 42-territory Risk board combined with an AI-adjudicated MUN crisis simulation. Exactly five main tabs: **Map & Public News**, **Presidential Office**, **Foreign Affairs**, **Bank**, and **Announcements & Reports**. Existing multiplayer rooms and SQLite records are preserved.
 
 ## Run
 
@@ -19,13 +19,14 @@ Existing installations: stop the server, `git pull --ff-only`, then restart. Sta
 
 ## Play loop
 
-1. Inspect the map, owned-region forces and national reserves. Enemy units stay hidden until scouted.
-2. Write a directive once in **Presidential Office**, then **Submit directive**. The interpreter infers missing details and schedules feasible actions without clarification or editing screens. Every assumption and rejected clause appears in the receipt.
-3. **Bank** shows automatically reserved dollars, oil and fuel. No second funding approval is needed. Impossible or unaffordable clauses are reported, while feasible clauses can continue.
-4. Ready every player, then **Advance month**. Scheduled moves, investments, messages, recruitment and policies settle automatically. Presidential Office shows exact private outcomes and the paid ledger appears in Bank.
-5. **Public Announcements** archives a monthly crisis briefing with named places, completed projects, actual spending/effects, war declarations, battle outcomes and activated treaties. Reconnaissance, troop inventories and private messages remain confidential.
-6. Talk in **Foreign Affairs**. Live AI reads the last 30 messages and negotiates concrete terms. The visible local negotiator is used without a provider; it makes contextual counteroffers and remembers the prior offer. Chat alone never transfers money. **Submit agreement** queues a formal proposal; each human counterpart consents using **Accept agreement**, then advances their month.
-7. Declare war by writing “Declare war on Russia” or use the **Declare war** shortcut in Foreign Affairs. The shortcut fills the single Office composer. Troop movements require a directive; a declaration alone does not invent an invasion force.
+1. Explore the illustrated board. Select cartoon formations for exact personnel, vehicle and vessel counts, readiness and supply stocks. Enemy forces remain hidden until scouted. The board supports pan/zoom, owner colors, flags, conflict markers, private movement arrows and transitions. An optional Spotify link sits beside it.
+2. Write a multi-paragraph directive in **Presidential Office** and confirm submission. The AI evaluates the intention, capabilities, funding, logistics, diplomatic implications, timing and risk. No command template is required.
+3. Immediate actions settle **during the current round**. Novel institutions, policies and scientific/infrastructure ideas can become persistent initiatives with budget, implementation period, operating cost, risk, progress, history and measurable effects. Unfeasible clauses receive a reasoned decision while feasible clauses continue.
+4. The engine validates every proposed effect. It can revise custom policy/building/action labels into generic initiatives; it cannot mint troops, grant free treasury or transfer ownership through an invented effect. Physical operations still require actual units, funds and geographical access.
+5. Advance the month when all humans are ready. Ongoing initiatives progress, recurring bills and loans are paid, production and trade income arrive, supplies/readiness update, and delivery outcomes are recorded. Losing a site or operating funds suspends a project. Foreign-site work requires host permission; unused denied/expired escrow is refunded.
+6. Negotiate in **Foreign Affairs** and submit terms for an immediate AI response or a human inbox decision. Accept, reject or counteroffer. Active agreements have actual transfers, debt, trade income or attack restrictions; chat itself does not invent a treaty.
+7. **Bank** shows treasury, debt, investments, trade/production/project income, resource stocks and the complete filterable ledger. Monthly financial reports reconcile all same-round spending and recurring costs.
+8. **Announcements & Reports** is an illustrated WNN newspaper and private briefing archive, with month/topic/edition filters and full-article dialogs. It reports actual recorded decisions, projects, conflicts and intelligence; secret projects and private decisions are excluded from other players' projections.
 
 ## Compact rules
 
@@ -40,13 +41,13 @@ Every government starts with **$1,500**, 100 oil and 100 fuel. Prices are fictio
 | Warships | 3 vessels | $200 |
 | Special forces | 100 personnel | $100 |
 
-Seven buildings: air base, naval base, economic center, trade port, military factory, oil refinery, intelligence center. The in-game catalog lists all prices and monthly effects. New buildings and recruited groups become available during the next funded monthly resolution.
+Seven buildings: air base, naval base, economic center, trade port, military factory, oil refinery, intelligence center. The in-game catalog lists all prices and monthly effects. Direct builds and recruitment settle immediately when validated; long-term novel initiatives progress monthly. A naval group represents two surface warships and one submarine; submarine missions are not simulated as an independent unit type.
 
-Policies cover economic, political, social and intelligence programs through bounded game effects. Complex ideas such as currency reform are abstract policy proposals; a narrative does not magically create real reserves, currencies, malware, assassinations or guaranteed enemy losses. Unsupported objectives or conditions receive a failure report, with no follow-up questions. Interpretation cannot create game mechanics that do not exist.
+Novel ideas use a general initiative/effect schema rather than requiring one handler per idea. The current validated effect primitives cover economic/political/social/research/counterintelligence/readiness scores, funded productivity income and fortifications. Ideas can be imaginative; their simulated consequences remain measurable and budgeted. Unverified external conditions can establish a conditional mandate with escrow, rather than being silently ignored. The engine does not implement an unrestricted real-world simulator.
 
 ## Map and performance
 
-The original 42-territory world map is retained, but the active renderer uses **one path per territory**, no SVG filters or shadows, and `requestAnimationFrame` for camera changes. Polling checks revisions and returns HTTP 204 for unchanged state. Remote updates patch the existing map instead of recreating it. Editor nodes persist, and unsent text is stored locally per room; polling never replaces a typed draft.
+The original 42-territory world map is retained, but the active renderer uses **one path per territory**, no SVG filters, and `requestAnimationFrame` for camera changes. Polling checks revisions and returns HTTP 204 for unchanged state. Remote updates patch the existing map instead of recreating it. Editor nodes persist, and unsent text is stored locally per room; polling never replaces a typed draft.
 
 Trade-route markers include 28 representative chokepoints and economic sites: Hormuz, Gibraltar, Suez, Malacca, Bab el-Mandeb, Panama, Bosporus, Dardanelles, Dover, Danish/Korea/Taiwan Straits, Sunda, Lombok, Bering, Magellan, Kiel, major commercial centers and the Cape route. Controlling the modeled linked regions produces a disclosed monthly bonus. These are simplified strategic locations, not an exhaustive nautical chart.
 
@@ -54,9 +55,9 @@ Trade-route markers include 28 representative chokepoints and economic sites: Ho
 
 Gemini and OpenAI are supported. For a Google AI Studio key, follow [the Mac setup guide](docs/gemini-setup.md). Set `AI_PROVIDER=gemini`, `GEMINI_API_KEY`, and optionally `GEMINI_MODEL` (default `gemini-3.1-flash-lite`) in your local `.env`. Run `npm run ai:check`, then restart the server. This powers narrative directives, diplomatic replies and agreement extraction through the same adapter.
 
-For OpenAI, set `AI_PROVIDER=openai`, `OPENAI_API_KEY` and `OPENAI_MODEL`. Without an explicit provider, a configured Gemini key selects Gemini; otherwise OpenAI remains the default. Keys remain server-side, are sent only in authentication headers and are never included in room views. Missing credentials, rate limits and provider failures produce explicit local fallback notices. Free-tier eligibility and quotas are controlled by Google; enabling a paid project can incur charges. No live credentials were supplied during development; adapter requests are verified with mock transports.
+For OpenAI, set `AI_PROVIDER=openai`, `OPENAI_API_KEY` and `OPENAI_MODEL`. Without an explicit provider, a configured Gemini key selects Gemini; otherwise OpenAI remains the default. Keys remain server-side, are sent only in authentication headers and are never included in room views. Missing credentials, rate limits and provider failures produce explicit local fallback notices. Free-tier eligibility and quotas are controlled by Google; enabling a paid project can incur charges. The adapter is covered by mock transport tests. A live Gemini adjudication was also verified on an imaginative three-paragraph directive without storing its key in the repository.
 
-Offline mode handles common movement, recruitment, buildings, scouting, messages, loans, and policy prose, with disclosed defaults. It cannot faithfully interpret unlimited arbitrary prose. The AI interprets; authoritative server rules calculate costs, validate resources and execute scheduled actions when the month advances.
+Offline mode handles common movement, recruitment, buildings, scouting, messages, loans, and policy prose, with disclosed defaults. It cannot faithfully interpret unlimited arbitrary prose. The AI interprets; authoritative server rules calculate costs, validate resources and settle authorized immediate actions and persist long-term projects.
 
 ## Storage and deployment
 
@@ -71,7 +72,7 @@ npm test
 npm run build
 ```
 
-The build command validates native JavaScript and required files; it is not a React bundle. The previous advanced engine and regression tests remain for older records. New UI and new matches use `packages/simple-engine/`, `simple-rules.js`, and `simple-map.js`. See `docs/v0.5-automatic-directives.md` for the current automatic submission behavior. `docs/v0.4-directive-game.md` describes the older approval workflow.
+The build command validates native JavaScript and required files; it is not a React bundle. The previous advanced engine and regression tests remain for older records. New UI and new matches use `packages/simple-engine/`, `simple-rules.js`, and `simple-map.js`. See `docs/v0.6-crisis-sandbox.md` for current behavior, effect bounds, validation and remaining limitations. Older version documents are historical.
 
 ## National forces and reserves
 

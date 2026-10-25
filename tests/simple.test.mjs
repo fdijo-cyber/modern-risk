@@ -50,10 +50,9 @@ test('war declarations and treaties use the directive path and produce public ou
 test('public monthly archive is identical for players and excludes intelligence, private messages and troop inventories',()=>{
  let g=game();g=submitDirective(g,'us',{text:'Private program',orders:[{action:'scout',target:3,method:'scouts'},{action:'message',country:'china',body:'Secret diplomatic text'},{action:'policy',category:'intelligence',purpose:'Classified counterintelligence plan',budget:100},{action:'build',target:6,building:'refinery'}]}).game;g=resolveSimple(g);const a=simpleView(g,'us'),b=simpleView(g,'eu');assert.deepEqual(a.publicBriefings,b.publicBriefings);const data=JSON.stringify(a.publicBriefings);for(const secret of ['Secret diplomatic text','Classified counterintelligence plan','unitEstimate','reserves','infantry'])assert.ok(!data.includes(secret));assert.ok(data.includes('refinery'));g=resolveSimple(g);assert.equal(g.publicBriefings.length,2);assert.ok(g.publicBriefings[0].events.some(e=>e.headline.includes('refinery')));
 });
-test('automatic analysis never requests clarification even for unknown objectives or impossible conditions',async()=>{
- for(const text of ['Do something incomprehensible xyz','If dragons appear, reform our currency.']){const g=game(),plan=await interpretLongDirective(g,'us',text,{}, {env:{}}),r=submitDirective(g,'us',{text,...plan});assert.equal(r.directive.questions.length,0);assert.equal(r.directive.status,'failed');assert.equal(r.directive.cost.money,0);}
+test('novel objectives and unknown conditions become persistent initiatives without clarification',async()=>{
+ for(const text of ['Establish a floating scientific academy.','If dragons appear, create a cultural institute.']){const g=game(),plan=await interpretLongDirective(g,'us',text,{}, {env:{}}),r=submitDirective(g,'us',{text,...plan});assert.equal(r.directive.questions.length,0);assert.equal(r.directive.status,'funded');assert.ok(r.directive.orders.some(o=>o.action==='initiative'));}
 });
-
 test('offline automatic mode infers a missing route and mobilization count, declares war and drafts natural messages',async()=>{
  const g=game();for(const text of ['Attack with one infantry unit.','Mobilize reserves to Alaska.','Declare war on Russia.','Send a message to China asking for better trade relations.']){const p=await interpretLongDirective(g,'us',text,{}, {env:{}});assert.ok(p.orders.length,text);assert.equal(p.questions.length,0);const r=submitDirective(g,'us',{text,...p});assert.notEqual(r.directive.status,'clarification');}
 });

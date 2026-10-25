@@ -1,3 +1,15 @@
+# v0.6 validation
+
+- **102 automated tests passed** locally, with syntax/build checks passing. Existing engine, multiplayer API and SQLite transaction regressions remain green.
+- New crisis tests cover one imaginative multi-paragraph directive evaluated, settled, persisted and projected in the current round; arbitrary project/policy/building labels; bounded effect revisions; secret project isolation; host consent/refunds; progression and real operating costs; site loss; suspension/resumption without duplicate benefits; immediate diplomatic counteroffers/transfers; and complete monthly ledger reconciliation.
+- A **real Gemini Game Master request** produced a public Pelagic Civic Academy in Alaska ($200, three months), a secret Blue Lantern Observatory in Western United States ($100, two months) and an official message ($5). Both initiatives were active in round 1, treasury was $1,195 and the other player projection contained no secret project. No key was stored in repository files.
+- Browser QA verified exactly five named tabs, illustrated board and exact formation details, same-round multi-paragraph submission, correct project locations and confidentiality, movement inventory conservation, month progression and paid operating costs, full Bank ledger, WNN/private editions and full article dialogs, and the Spotify side link.
+- Browser verification screenshots were captured locally and excluded from the public source repository.
+- Higgsfield generation was attempted with one transparent nine-miniature atlas at the quoted 0.5 credits. The provider rejected it with “Requires basic plan or higher.” No job/art asset was created. Existing original SVG miniatures are used.
+- Physical iPad/Safari FPS and real Internet multiplayer hosting remain unverified; no deployment is claimed. Independent submarine commands and comprehensive real-world logistics are not implemented in the simplified engine. Generic effects are deliberately bounded and external triggers are not fabricated.
+
+## Earlier validation history (superseded where noted above)
+
 # v0.5 validation
 
 - 83 tests passed locally, including the existing regression suite, one-submit automatic commitments, partial rejection without charges, inventory/budget double-spend protection, delayed monthly execution, declarations of war, treaty consent and public/private report isolation.
