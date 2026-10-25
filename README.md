@@ -1,6 +1,6 @@
-# MODERN RISK — v0.4
+# MODERN RISK — v0.5
 
-A small, directive-first geopolitical strategy game. The main interface has **four tabs**: Map, Presidential Office, Bank, and Foreign Affairs.
+A small, directive-first geopolitical strategy game. The main interface has **five tabs**: Map, Presidential Office, Bank, Foreign Affairs, and Public Announcements.
 
 ## Run
 
@@ -19,12 +19,13 @@ Existing installations: stop the server, `git pull --ff-only`, then restart. Sta
 
 ## Play loop
 
-1. Inspect the map and your visible unit groups. Enemy units remain hidden until scouted.
-2. Write a directive in **Presidential Office**. Ordinary prose and explicit conditions are supported by the optional AI interpreter; offline interpretation supports common named-region actions and abstract policy programs.
-3. Review the actions, inferred assumptions, dollars, oil, fuel and recurring costs. Adjust the interpretation or reject it.
-4. Approve the directive in the Office, then **authorize funding in Bank**. Resources and unit groups are reserved without being spent twice.
-5. Ready every player and advance the month. Outcomes, paid costs and private briefing come from the committed simulation.
-6. Negotiate in **Foreign Affairs**, then extract a proposed agreement from the conversation. Each human government must separately approve the agreement directive and Bank funding. Chat alone never creates a treaty or payment.
+1. Inspect the map, owned-region forces and national reserves. Enemy units stay hidden until scouted.
+2. Write a directive once in **Presidential Office**, then **Submit directive**. The interpreter infers missing details and schedules feasible actions without clarification or editing screens. Every assumption and rejected clause appears in the receipt.
+3. **Bank** shows automatically reserved dollars, oil and fuel. No second funding approval is needed. Impossible or unaffordable clauses are reported, while feasible clauses can continue.
+4. Ready every player, then **Advance month**. Scheduled moves, investments, messages, recruitment and policies settle automatically. Presidential Office shows exact private outcomes and the paid ledger appears in Bank.
+5. **Public Announcements** archives a monthly crisis briefing with named places, completed projects, actual spending/effects, war declarations, battle outcomes and activated treaties. Reconnaissance, troop inventories and private messages remain confidential.
+6. Talk in **Foreign Affairs**. Live AI reads the last 30 messages and negotiates concrete terms. The visible local negotiator is used without a provider; it makes contextual counteroffers and remembers the prior offer. Chat alone never transfers money. **Submit agreement** queues a formal proposal; each human counterpart consents using **Accept agreement**, then advances their month.
+7. Declare war by writing “Declare war on Russia” or use the **Declare war** shortcut in Foreign Affairs. The shortcut fills the single Office composer. Troop movements require a directive; a declaration alone does not invent an invasion force.
 
 ## Compact rules
 
@@ -41,7 +42,7 @@ Every government starts with **$1,500**, 100 oil and 100 fuel. Prices are fictio
 
 Seven buildings: air base, naval base, economic center, trade port, military factory, oil refinery, intelligence center. The in-game catalog lists all prices and monthly effects. New buildings and recruited groups become available during the next funded monthly resolution.
 
-Policies cover economic, political, social and intelligence programs through bounded game effects. Complex ideas such as currency reform are abstract policy proposals; a narrative does not magically create real reserves, currencies, malware, assassinations or guaranteed enemy losses. Unsupported or ambiguous conditions need clarification.
+Policies cover economic, political, social and intelligence programs through bounded game effects. Complex ideas such as currency reform are abstract policy proposals; a narrative does not magically create real reserves, currencies, malware, assassinations or guaranteed enemy losses. Unsupported objectives or conditions receive a failure report, with no follow-up questions. Interpretation cannot create game mechanics that do not exist.
 
 ## Map and performance
 
@@ -53,13 +54,13 @@ Trade-route markers include 28 representative chokepoints and economic sites: Ho
 
 Set **OPENAI_API_KEY** and **OPENAI_MODEL** in the server environment to enable broad narrative interpretation, general diplomatic replies and AI extraction of agreement terms. Never enter keys in the browser or commit them. Missing credentials/provider failures produce explicit offline mode. No live model call is included in automated verification; the provider contract is tested with a mock transport.
 
-Offline mode handles common movement, recruitment, buildings, scouting, messages, loans, and policy prose, with disclosed defaults. It cannot faithfully interpret unlimited arbitrary prose. The AI proposes; authoritative server rules calculate costs, validate resources and execute approved actions.
+Offline mode handles common movement, recruitment, buildings, scouting, messages, loans, and policy prose, with disclosed defaults. It cannot faithfully interpret unlimited arbitrary prose. The AI interprets; authoritative server rules calculate costs, validate resources and execute scheduled actions when the month advances.
 
 ## Storage and deployment
 
 Rooms, messages, directives and monthly results persist in `data/modern-risk.sqlite`. Keep the Mac awake while hosting. Use a persistent disk with a long-lived Node/Docker host for Internet play; **GitHub Pages cannot run the multiplayer server**. A Dockerfile is included. No public host/domain is deployed.
 
-Server configuration: `HOST`, `PORT`, `DB_PATH`. `.env.example` documents optional settings. Environment files are not auto-loaded; use `node --env-file=.env apps/server/server.mjs` if needed. Back up SQLite only with the process stopped or SQLite-aware backup tooling.
+Server configuration: `HOST`, `PORT`, `DB_PATH`. `.env.example` documents optional settings. A local `.env` file is automatically loaded at startup. Copy `.env.example` to `.env`, add your API key and chosen available model, then restart. Do not commit `.env`. Back up SQLite only with the process stopped or SQLite-aware backup tooling.
 
 ## Development
 
@@ -68,11 +69,11 @@ npm test
 npm run build
 ```
 
-The build command validates native JavaScript and required files; it is not a React bundle. The previous advanced engine and regression tests remain for older records. New UI and new matches use `packages/simple-engine/`, `simple-rules.js`, and `simple-map.js`. See `docs/v0.4-directive-game.md` for precise approval/resource/condition semantics and current limits.
+The build command validates native JavaScript and required files; it is not a React bundle. The previous advanced engine and regression tests remain for older records. New UI and new matches use `packages/simple-engine/`, `simple-rules.js`, and `simple-map.js`. See `docs/v0.5-automatic-directives.md` for the current automatic submission behavior. `docs/v0.4-directive-game.md` describes the older approval workflow.
 
 ## National forces and reserves
 
-Every government starts with **30–32 total groups across deployed and reserve inventories**, not 30–32 in every territory. Presidential Office shows six columns for each owned region, a separate national reserve row, and total inventory. Reserves cannot move/attack until mobilized through the same paid directive/Bank workflow; returning deployed groups to reserve also has a small cost. Aircraft mobilization requires an air base; warships require a coastal naval base.
+Every government starts with **30–32 total groups across deployed and reserve inventories**, not 30–32 in every territory. Presidential Office shows six columns for each owned region, a separate national reserve row, and total inventory. Reserves cannot move/attack until mobilized through the same automatic paid directive workflow; returning deployed groups to reserve also has a small cost. Aircraft mobilization requires an air base; warships require a coastal naval base.
 
 | Government | Infantry | Tanks | Special forces | Fighters | Warships | Bombers | Total | Advantage |
 |---|---:|---:|---:|---:|---:|---:|---:|---|

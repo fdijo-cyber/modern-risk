@@ -1,3 +1,9 @@
+# Current update — v0.5
+
+The active simplified interface now uses five tabs and a single directive submission. It infers defaults, records failures without clarification prompts, reserves resources automatically and executes scheduled actions on month advancement. Office results give actual per-action outcomes and spending. Public Announcements archives monthly public consequences while protecting private intelligence and conversations. War declarations and treaty proposals are directives. Foreign Affairs supports contextual live-model conversations and a visibly labeled local negotiator. `.env` auto-loads at startup.
+
+Broad arbitrary-language interpretation and general conversation require a server-configured language-model provider. No live credentials were configured or paid calls verified. Policies remain bounded abstract game programs; the full original master specification is not claimed complete. Deployment remains deferred. Earlier implementation history and gaps follow.
+
 # Development status — v0.3
 
 GitHub: complete v0.3 source published on public main at fdijo-cyber/modern-risk. Deployment: not configured. This file describes functioning code, not aspiration.

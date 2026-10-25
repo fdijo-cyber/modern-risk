@@ -1,3 +1,13 @@
+# v0.5 validation
+
+- 83 tests passed locally, including the existing regression suite, one-submit automatic commitments, partial rejection without charges, inventory/budget double-spend protection, delayed monthly execution, declarations of war, treaty consent and public/private report isolation.
+- Live-model diplomat adapter tested with a mock transport: full thread supplied, latest question answered, no chat-side state changes. Local counteroffers/acceptance and extraction preserve the offered amount, term and payer.
+- Build/syntax checks passed.
+- Browser QA: the five tabs rendered; a combined movement/refinery/education/war directive scheduled four actions without questions or approval screens. Bank showed $288 reserved. Ready and Advance month produced actual payment, a completed refinery, a 74% social index and the war declaration in Public Announcements. Foreign Affairs negotiated a $700 request down to a $500/8-month offer and remembered the prior offer on acceptance, explicitly labeled local negotiation.
+- No live model credentials or paid provider calls were configured. Actual iPad/Safari performance has not been measured. No deployment is claimed.
+
+Earlier validation history follows.
+
 # Validation record
 
 Validated in the supplied Node 24.22.1 environment.

@@ -1,12 +1,12 @@
 import {composeMessage} from '../diplomacy-engine/messages.mjs';
 const LIMIT=6000;
 export function aiConfigured(env=process.env){return !!(env.OPENAI_API_KEY&&env.OPENAI_MODEL);}
-export async function modelText({instructions,input,env=process.env,fetchImpl=fetch}){
+export async function modelText({instructions,input,env=process.env,fetchImpl=fetch,maxOutputTokens=1200,outputLimit=LIMIT}){
  if(!aiConfigured(env))return {text:null,source:'offline',reason:'Language-model provider is not configured'};
  try{
-  const res=await fetchImpl('https://api.openai.com/v1/responses',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${env.OPENAI_API_KEY}`},signal:AbortSignal.timeout(15000),body:JSON.stringify({model:env.OPENAI_MODEL,instructions,input:JSON.stringify(input),max_output_tokens:1200,store:false})});
+  const res=await fetchImpl('https://api.openai.com/v1/responses',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${env.OPENAI_API_KEY}`},signal:AbortSignal.timeout(15000),body:JSON.stringify({model:env.OPENAI_MODEL,instructions,input:JSON.stringify(input),max_output_tokens:maxOutputTokens,store:false})});
   if(!res.ok)throw new Error('Provider unavailable');const data=await res.json();const text=(data.output??[]).filter(x=>x.type==='message').flatMap(x=>x.content??[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n').trim();
-  if(!text||text.length>LIMIT)throw new Error('Invalid output');return {text,source:'language-model',reason:null};
+  if(!text||text.length>outputLimit)throw new Error('Invalid output');return {text,source:'language-model',reason:null};
  }catch{return {text:null,source:'offline',reason:'Provider unavailable; deterministic fallback used'};}
 }
 export async function draftOfficialMessage({sender,recipient,request,template,env,fetchImpl}){

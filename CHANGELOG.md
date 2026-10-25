@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- Submit once: automatic budget reservations, inferred defaults, per-clause failures and monthly execution; removed editing and double approval from the active client.
+- Fifth Public Announcements tab with archived public monthly consequences and confidential private briefings.
+- Directive-based war declarations and treaty proposals; chat agreement submission and counterpart consent.
+- Contextual diplomatic counteroffers, 30-message live AI history, transparent fallback labels and local `.env` loading.
+- Expanded API, settlement, fog-of-war, public archive and model-adapter regression tests.
+
 ## 0.2.0
 
 - Explicit solo mode and human multiplayer lobby selection.

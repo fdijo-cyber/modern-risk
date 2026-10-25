@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {seedSimple,makeDirective,decideDirective,resolveSimple,simpleView,proposeAgreement,sendOfficial,UNIT_TYPES,BUILDINGS} from '../packages/simple-engine/index.mjs';
+import {seedSimple,submitDirective,makeDirective,decideDirective,resolveSimple,simpleView,proposeAgreement,sendOfficial,UNIT_TYPES,BUILDINGS} from '../packages/simple-engine/index.mjs';
 import {offlinePlan,interpretLongDirective,extractAgreement} from '../packages/simple-engine/planner.mjs';
 import {liteMapMarkup} from '../apps/web/public/simple-map.js';
 const game=()=>{const g=seedSimple();Object.values(g.countries).forEach(c=>c.human=true);return g;};
@@ -30,3 +30,34 @@ test('standing down deployed units adds them to reserve and reduces deployed gro
 test('aircraft mobilization requires an air base; naval mobilization requires a coastal naval base',()=>{const g=game();assert.throws(()=>makeDirective(g,'us',{text:'Bombers to an unprepared region',orders:[{action:'mobilize',target:6,units:{bombers:1}}]}),/Air base/);assert.throws(()=>makeDirective(g,'us',{text:'Ships to an unprepared coast',orders:[{action:'mobilize',target:7,units:{navy:1}}]}),/naval base/);});
 test('prose mobilization and demobilization use national reserves and named locations',()=>{const g=game();const a=offlinePlan(g,'us','Mobilize two infantry units from reserve to Alaska.');assert.equal(a.orders[0].action,'mobilize');assert.equal(a.orders[0].units.infantry,2);const b=offlinePlan(g,'us','Demobilize one tank unit from Alaska to reserve.');assert.equal(b.orders[0].action,'reserve');assert.equal(b.orders[0].units.tanks,1);});
 test('country advantages modify real costs and income and initial inventories differ',()=>{const g=game();const ch=makeDirective(g,'china',{text:'Recruit infantry',orders:[{action:'recruit',unit:'infantry',quantity:1,target:31}]});assert.equal(ch.cost.money,54);assert.notDeepEqual(g.countries.us.startingUnits,g.countries.russia.startingUnits);const baseline=structuredClone(g);baseline.countries.eu.bonus='';const out=resolveSimple(g),other=resolveSimple(baseline);assert.equal(out.countries.eu.lastIncome,Math.floor(other.countries.eu.lastIncome*1.1));});
+
+test('one submission automatically schedules movement, investment and messages without effects before advance',()=>{
+ let g=game();const before=g.regions[6].units.infantry;const r=submitDirective(g,'us',{text:'Combined presidential program',orders:[{action:'move',origin:6,target:7,units:{infantry:1}},{action:'policy',category:'economic',purpose:'Invest in domestic commerce',budget:100},{action:'message',country:'china',body:'Let us negotiate trade.'}],assumptions:['Default economic budget $100.']});g=r.game;
+ assert.equal(r.directive.status,'funded');assert.equal(r.directive.questions.length,0);assert.equal(g.countries.us.treasury,1500);assert.equal(g.messages.length,0);assert.equal(g.regions[6].units.infantry,before);assert.equal(r.directive.cost.money,113);
+ g=resolveSimple(g);assert.equal(g.regions[6].units.infantry,before-1);assert.equal(g.countries.us.economic,69);assert.ok(g.messages.some(m=>m.to==='china'));assert.equal(g.countries.us.ledger.filter(l=>['Move from','economic policy','Send official'].some(s=>l.reason.startsWith(s))).reduce((n,l)=>n-l.amount,0),113);
+ assert.equal(g.countries.us.briefings[0].results.length,1);assert.ok(g.countries.us.briefings[0].results[0].results.some(r=>r.includes('economic now 69%')));
+});
+test('impossible clauses are reported once and affordable clauses still execute',()=>{
+ let g=game();g.countries.us.treasury=120;const r=submitDirective(g,'us',{text:'Impossible forces and affordable investment',orders:[{action:'move',origin:6,target:7,units:{infantry:99}},{action:'policy',category:'social',purpose:'Public health',budget:100},{action:'build',target:6,building:'refinery'}]});assert.equal(r.directive.questions.length,0);assert.equal(r.directive.orders.length,1);assert.equal(r.directive.cost.money,100);assert.ok(r.directive.results.some(r=>r.includes('Not enough')));assert.ok(r.directive.results.some(r=>r.includes('Insufficient')));g=resolveSimple(r.game);assert.equal(g.countries.us.social,74);assert.equal(g.regions[6].buildings.refinery,undefined);
+});
+test('automatic commitments cannot double spend money or troops',()=>{
+ let g=submitDirective(game(),'us',{text:'Move',orders:[{action:'move',origin:6,target:7,units:{infantry:1}}]}).game;const second=submitDirective(g,'us',{text:'Move twice',orders:[{action:'move',origin:6,target:7,units:{infantry:1}}]});assert.equal(second.directive.status,'failed');assert.equal(second.directive.cost.money,0);
+ g.countries.us.treasury=100;const p=submitDirective(g,'us',{text:'Invest',orders:[{action:'policy',category:'economic',purpose:'Industry',budget:100}]});assert.equal(p.directive.status,'failed');
+});
+test('war declarations and treaties use the directive path and produce public outcomes at month end',()=>{
+ let g=game();g.countries.china.human=false;let r=submitDirective(g,'us',{text:'War and trade',orders:[{action:'war',country:'russia'},{action:'treaty',country:'china',kind:'trade',amount:0,months:6}]});assert.equal(r.directive.status,'funded');assert.equal(r.game.wars,undefined);g=resolveSimple(r.game);assert.ok(g.wars.some(w=>w.parties.includes('russia')));assert.equal(g.agreements[0].status,'active');assert.ok(g.publicBriefings[0].events.some(e=>e.headline.includes('declares war')));assert.ok(g.publicBriefings[0].events.some(e=>e.headline.includes('trade agreement')));
+});
+test('public monthly archive is identical for players and excludes intelligence, private messages and troop inventories',()=>{
+ let g=game();g=submitDirective(g,'us',{text:'Private program',orders:[{action:'scout',target:3,method:'scouts'},{action:'message',country:'china',body:'Secret diplomatic text'},{action:'policy',category:'intelligence',purpose:'Classified counterintelligence plan',budget:100},{action:'build',target:6,building:'refinery'}]}).game;g=resolveSimple(g);const a=simpleView(g,'us'),b=simpleView(g,'eu');assert.deepEqual(a.publicBriefings,b.publicBriefings);const data=JSON.stringify(a.publicBriefings);for(const secret of ['Secret diplomatic text','Classified counterintelligence plan','unitEstimate','reserves','infantry'])assert.ok(!data.includes(secret));assert.ok(data.includes('refinery'));g=resolveSimple(g);assert.equal(g.publicBriefings.length,2);assert.ok(g.publicBriefings[0].events.some(e=>e.headline.includes('refinery')));
+});
+test('automatic analysis never requests clarification even for unknown objectives or impossible conditions',async()=>{
+ for(const text of ['Do something incomprehensible xyz','If dragons appear, reform our currency.']){const g=game(),plan=await interpretLongDirective(g,'us',text,{}, {env:{}}),r=submitDirective(g,'us',{text,...plan});assert.equal(r.directive.questions.length,0);assert.equal(r.directive.status,'failed');assert.equal(r.directive.cost.money,0);}
+});
+
+test('offline automatic mode infers a missing route and mobilization count, declares war and drafts natural messages',async()=>{
+ const g=game();for(const text of ['Attack with one infantry unit.','Mobilize reserves to Alaska.','Declare war on Russia.','Send a message to China asking for better trade relations.']){const p=await interpretLongDirective(g,'us',text,{}, {env:{}});assert.ok(p.orders.length,text);assert.equal(p.questions.length,0);const r=submitDirective(g,'us',{text,...p});assert.notEqual(r.directive.status,'clarification');}
+});
+
+test('sequential build, reserve mobilization and chained friendly movement settle as analyzed',()=>{
+ let g=game();const start=g.regions[7].units.fighters;const r=submitDirective(g,'us',{text:'Prepare and relocate an air group',orders:[{action:'build',target:6,building:'airbase'},{action:'mobilize',target:6,units:{fighters:1}},{action:'move',origin:6,target:7,units:{fighters:1}},{action:'move',origin:7,target:6,units:{fighters:start+1}}]});assert.equal(r.directive.orders.length,4);g=resolveSimple(r.game);assert.equal(g.regions[6].buildings.airbase,1);assert.equal(g.regions[7].units.fighters,0);assert.ok(g.countries.us.directives[0].results.every(r=>!r.includes('failed:')));
+});
