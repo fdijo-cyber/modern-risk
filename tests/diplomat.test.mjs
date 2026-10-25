@@ -16,3 +16,9 @@ test('an unavailable live provider is explicitly labeled and uses a contextual r
 test('accepted counteroffers extract the offered amount and payer rather than a rejected request',async()=>{
  const {extractAgreement}=await import('../packages/simple-engine/planner.mjs');const g=seedSimple();sendOfficial(g,'us','china','Would you lend us $700 over 8 months?');sendOfficial(g,'china','us',localDiplomat(g,'china','us'),{automated:true});sendOfficial(g,'us','china','Yes, I accept those terms.');sendOfficial(g,'china','us',localDiplomat(g,'china','us'),{automated:true});const terms=await extractAgreement(g,'us','china',{env:{}});assert.equal(terms.kind,'loan');assert.equal(terms.amount,500);assert.equal(terms.months,8);assert.equal(terms.from,'china');
 });
+
+test('diplomatic context grounds negotiating limits in own capacity without including enemy forces',async()=>{
+ const g=seedSimple();g.countries.china.treasury=75;g.countries.china.initiatives=[{title:'Harbor',status:'active',upkeep:12}];sendOfficial(g,'us','china','Fund an experimental cross-border university.');const before=structuredClone(g);let input;
+ const r=await replyDiplomat(g,'china','us',{env:{AI_PROVIDER:'gemini',GEMINI_API_KEY:'fixture'},fetchImpl:async(url,options)=>{const body=JSON.parse(options.body);input=JSON.parse(body.contents[0].parts[0].text);return {ok:true,json:async()=>({candidates:[{finishReason:'STOP',content:{parts:[{text:'We support a limited research pilot, subject to an affordable funding agreement. We cannot commit to the full program now.'}]}}]})};}});
+ assert.equal(input.ownCapacity.treasury,75);assert.equal(input.ownCapacity.commitments[0].upkeep,12);assert.equal(input.visitor,'United States');assert.ok(!JSON.stringify(input).includes('reserveFormations'));assert.equal(r.source,'language-model');assert.deepEqual(g,before);
+});
