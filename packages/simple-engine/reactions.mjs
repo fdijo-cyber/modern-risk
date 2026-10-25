@@ -1,3 +1,4 @@
+import {ensureFormations,detachFormations,mergeFormations} from './formations.mjs';
 // Abstract, seeded defensive decisions. No real-world operational instructions.
 import {createHash} from 'node:crypto';
 const chance=(g,key)=>parseInt(createHash('sha256').update(`${g.seed}:${g.round}:${key}`).digest('hex').slice(0,8),16)/0x100000000;
@@ -25,7 +26,7 @@ export function reactToBattle(g,{attacker,defender,region,captured}){
  }else if(pick.kind==='war-weariness'){
   enemy.social=clamp(enemy.social-2);enemy.migrationPressure=clamp((enemy.migrationPressure??0)+1);r.headline=`${c.name} challenges ${enemy.name}'s war effort in a public campaign`;r.detail='The abstract influence campaign reduces the attacker’s social index by two and adds one simulated migration-pressure point. It neither guarantees civilian decisions nor moves military personnel.';
  }else if(pick.kind==='reserve-surge'){
-  c.reserves.infantry--;staging.units.infantry++;c.oil--;c.fuel--;
+  ensureFormations(g);mergeFormations(staging.formations,detachFormations(c.reserveFormations,{infantry:1}));c.reserves.infantry--;staging.units.infantry++;c.oil--;c.fuel--;
   r.headline=`${c.name} deploys emergency reserves`;r.detail=`One infantry group mobilized at ${staging.name}; $5, one oil and one fuel consumed. National personnel were transferred from reserve, not created.`;
  }else if(pick.kind==='scorched-withdrawal'){
   c.oil-=5;c.fuel-=5;const building=['refinery','port','economic','factory'].find(k=>t.buildings[k]>0);if(building){t.buildings[building]--;if(!t.buildings[building])delete t.buildings[building];}

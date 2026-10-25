@@ -22,3 +22,8 @@ test('Gemini powers both narrative directive interpretation and diplomatic conve
  const p=await interpretLongDirective(g,'us','Invest in our industry.',{},{env,fetchImpl:async()=>response(JSON.stringify(plan))});assert.equal(p.source,'language-model');assert.equal(p.orders[0].budget,100);
  sendOfficial(g,'us','china','Could we negotiate a four-month trade deal?');const r=await replyDiplomat(g,'china','us',{env,fetchImpl:async()=>response('We can agree in principle to four months without an upfront transfer.')});assert.equal(r.source,'language-model');assert.ok(r.body.includes('four months'));assert.equal(g.agreements.length,0);
 });
+
+test('temporary Gemini server failures retry safely, preserve HTTP status and never claim a local outcome',async()=>{
+ let calls=0;const r=await modelText({env,input:{},instructions:'Test',retryDelay:async()=>{},fetchImpl:async()=>{calls++;return calls<3?{ok:false,status:503}:response('OK');}});assert.equal(calls,3);assert.equal(r.text,'OK');
+ calls=0;const failed=await modelText({env,input:{},instructions:'Test',retryDelay:async()=>{},fetchImpl:async()=>{calls++;return {ok:false,status:503};}});assert.equal(calls,3);assert.ok(failed.reason.includes('HTTP 503'));assert.ok(!failed.reason.includes('Local fallback'));assert.equal(failed.text,null);
+});

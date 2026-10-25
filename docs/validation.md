@@ -1,3 +1,7 @@
+# v0.7.2 validation
+
+125 automated tests and build checks pass. Seven condition tests verify native terrain and novice defaults, two-to-three-engagement attrition, actual battle wounds and destruction, movement/reserve identity preservation, paid training, training-initiative benefits applying once, and crisis-dependent equipment/recovery. Provider tests verify retries and explicit HTTP errors without secrets or fabricated local outcomes. No new live Gemini call or wall-clock one-hour wait is claimed. Existing multiplayer, SQLite, accounting, secrecy and map regressions remain covered. Earlier release evidence follows.
+
 # v0.7.1 validation
 
 117 automated tests pass. New tests verify short attack orders, actual inferred deployments, $12/group costs, affordable downscaling, treaty violation consequences, seeded variation across all six AI responses, payment limits, reserve conservation, and real temporary infrastructure recovery costs. Build/syntax checks pass. Visual effects are finite and reduced-motion-aware; no physical-device FPS benchmark or new live Gemini check was performed. Earlier release evidence follows.

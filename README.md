@@ -1,3 +1,9 @@
+# v0.7.2 unit condition and accelerated months
+
+Formations now retain health, experience, training, terrain familiarity, supply, equipment quality and monthly recovery in the backend. Combat is intentionally accelerated; supported veterans can last longer than unsupported rookies. New matches default to one real hour per fictional month; choose Host advances for manual play. Existing saves retain their room timer and gain formation records automatically. Run `npm run conditions:check` to verify the new model.
+
+Gemini temporary server failures retry automatically and show the HTTP status if still unsuccessful. Run `npm run ai:check` to check your local private API configuration. Failed adjudication remains deferred; it does not fabricate completed actions.
+
 # v0.7 Crisis Chair
 
 The Presidential Office now submits open-ended directives to the structured Crisis Chair. Gemini must be configured; provider failures defer execution without inventing results. Solo directives settle immediately. Multiplayer directives are sealed against the monthly snapshot and settle together when the host advances the month. Historical questions are read-only.
