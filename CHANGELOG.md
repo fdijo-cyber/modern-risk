@@ -21,3 +21,13 @@
 - Added pointer pan, wheel zoom, pinch zoom, region search, label toggles, fullscreen and contextual force/intelligence inspector.
 - Preserved authoritative troop privacy and frozen reconnaissance estimates in every map layer.
 - Public GitHub source publication explicitly authorized by the user, superseding the original private-repository requirement.
+
+## 0.4.0
+
+- Replaced the ministry-heavy interface with Map, Presidential Office, Bank, and Foreign Affairs.
+- Added a single prose-directive workflow with review/edit, explicit assumptions, executable guards, presidential consent and separate Bank resource authorization.
+- New simplified matches start every government at $1,500 and use six grouped unit types, seven building types, oil/fuel costs and monthly upkeep.
+- Rebuilt the active map as 42 unfiltered paths with frame-scheduled camera updates and a stable DOM; added 28 strategic trade/economic markers.
+- Fixed typing loss by retaining editors, saving per-room local drafts and avoiding page rebuilds on revision polling.
+- Added messenger-style diplomacy, chat-derived agreement proposals, two-party approvals, transfers, recurring trade and loan effects.
+- Preserved existing advanced saves and engine/tests. Complex live AI interpretation remains configurable rather than falsely presented as active offline.

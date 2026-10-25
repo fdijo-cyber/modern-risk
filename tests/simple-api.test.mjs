@@ -1,0 +1,20 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {spawn} from 'node:child_process';import {mkdtempSync,rmSync} from 'node:fs';import {tmpdir} from 'node:os';import {join} from 'node:path';
+test('simplified HTTP flow: interpret → presidential approval → funding → month; messages and private agreement review',async()=>{
+ const dir=mkdtempSync(join(tmpdir(),'risk-simple-'));const child=spawn(process.execPath,['apps/server/server.mjs'],{env:{...process.env,PORT:'0',DB_PATH:join(dir,'db.sqlite'),OPENAI_API_KEY:'',OPENAI_MODEL:''}});let base;
+ try{base=await new Promise((yes,no)=>{const timeout=setTimeout(()=>no(new Error('timeout')),10000);child.stdout.on('data',d=>{const m=/http:\/\/[^\s]+/.exec(String(d));if(m){clearTimeout(timeout);yes(m[0]);}});child.once('exit',()=>no(new Error('server exited')));});
+ const call=async(path,data,token)=>{const r=await fetch(base+'/api/'+path,{method:data?'POST':'GET',headers:{...(data?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{})},body:data?JSON.stringify(data):undefined});return {status:r.status,body:r.status===204?null:await r.json()};};
+ const a=(await call('create',{name:'A',country:'us',mode:'multiplayer',maxPlayers:2,maxRounds:3})).body,code=a.room.code;assert.equal(a.room.status,'lobby');
+ const b=(await call('join',{name:'B',country:'eu',code})).body;assert.equal((await call('start',{code},a.token)).status,200);
+ let av=(await call('state?code='+code,null,a.token)).body;assert.equal(av.game.ruleset,'simple');assert.equal(av.game.you.treasury,1500);assert.equal((await call('state?code='+code+'&revision='+av.revision,null,a.token)).status,204);
+ const interpreted=await call('simple/interpret',{code,text:'Build an oil refinery in Western United States.'},a.token);assert.equal(interpreted.status,200);const id=interpreted.body.directive.id;assert.equal(interpreted.body.directive.cost.money,180);
+ assert.equal((await call('simple/decide',{code,id,decision:'fund'},a.token)).status,400);assert.equal((await call('simple/decide',{code,id,decision:'approve'},a.token)).status,200);assert.equal((await call('simple/decide',{code,id,decision:'fund'},a.token)).status,200);
+ assert.equal((await call('simple/decide',{code,id,decision:'fund'},a.token)).status,400);
+ assert.equal((await call('order',{code,order:{action:'build',target:6,building:'refinery'}},a.token)).status,400);
+ const bv=(await call('state?code='+code,null,b.token)).body;assert.equal(bv.game.you.directives.length,0);assert.equal(bv.game.regions[6].units,undefined);
+ const sent=await call('simple/message',{code,country:'eu',body:'Let us sign a trade agreement for 6 months.',requestId:'message-test-001'},a.token);assert.equal(sent.status,200);assert.equal(sent.body.game.you.treasury,1495);
+ assert.equal((await call('simple/message',{code,country:'eu',body:'Let us sign a trade agreement for 6 months.',requestId:'message-test-001'},a.token)).body.game.messages.length,1);
+ const agreement=await call('simple/extract-agreement',{code,country:'eu'},a.token);assert.equal(agreement.status,200);assert.equal(agreement.body.agreement.status,'offered');assert.equal(agreement.body.directive.status,'review');
+ await call('ready',{code,ready:true},a.token);await call('ready',{code,ready:true},b.token);const advanced=await call('advance',{code,round:1},a.token);assert.equal(advanced.status,200);assert.equal(advanced.body.game.round,2);assert.equal(advanced.body.game.regions[6].buildings.refinery,1);assert.equal(advanced.body.game.agreements[0].status,'offered');assert.equal(advanced.body.game.you.directives.find(d=>d.id===id).status,'executed');
+ const client=await (await fetch(base+'/app.js')).text();assert.ok(client.includes("const tabs=['Map','Presidential Office','Bank','Foreign Affairs']"));assert.ok(client.includes('drafts.write'));assert.ok(!client.includes('setInterval(async()=>{updateClock();'));
+ }finally{child.kill();await new Promise(r=>child.once('exit',r));rmSync(dir,{recursive:true,force:true});}
+});

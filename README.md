@@ -1,96 +1,86 @@
-# MODERN RISK
+# MODERN RISK — v0.4
 
-A runnable, dependency-free development foundation for the supplied geopolitical strategy specification. **v0.3 is a working multiplayer slice, not the completed 31-section product.** The full source specification is preserved in `docs/master-specification.md` and each major gap is tracked in `docs/progress.md`.
+A small, directive-first geopolitical strategy game. The main interface has **four tabs**: Map, Presidential Office, Bank, and Foreign Affairs.
 
-## Run in two commands
+## Run
 
-Install **Node.js 24 or later**, unzip this folder, open a terminal in it:
+Requires **Node.js 24+**. No external npm packages or compilation are needed.
 
 ```sh
+git clone https://github.com/fdijo-cyber/modern-risk.git
+cd modern-risk
 npm test
-npm start
-```
-
-Open **http://127.0.0.1:3000**. There is no npm dependency installation or compilation step. Node 24's built-in SQLite persists room data in `data/modern-risk.sqlite` (created automatically). It may emit Node's experimental SQLite warning.
-
-1. Choose **Solo** (starts immediately with every opponent AI) or **Online multiplayer** (2–4 humans, remaining governments AI), then choose a government.
-2. Open another browser profile/device, join with its code and a different government.
-3. The host starts multiplayer with at least two people. Solo mode needs no second player.
-4. Use the atlas and ministries to review and confirm orders.
-5. Submit directives in every player session. The host advances the month, or the configured deadline closes planning automatically.
-6. Inspect the actual ledger, production schedule, confidential briefing, public news and changed territory controllers.
-
-For devices on the same trusted LAN, bind to `0.0.0.0` and open the server computer's LAN address. Firewall configuration may be necessary.
-
-```sh
 HOST=0.0.0.0 npm start
 ```
 
-Windows PowerShell:
+Open http://localhost:3000 on the server computer. Friends on the same Wi-Fi use the computer's local IP with port 3000, for example http://192.168.8.101:3000. Choose solo or multiplayer, create/join a room and select a government.
 
-```powershell
-$env:HOST="0.0.0.0"
-npm start
-```
+Existing installations: stop the server, `git pull --ff-only`, then restart. Start a **new match** for the v0.4 $1,500 rules. Older advanced-rule matches remain in the database; the simplified client does not rewrite their money or force counts.
 
-Keep the browser session: its local storage contains the capability token used to rejoin. Clearing browser storage loses that session. Room codes permit joining unclaimed governments while in the lobby; they do not grant access to another player's data. Do not expose this development server directly to the public Internet; production identity, abuse protection, TLS proxy configuration and operational recovery remain to be completed.
+## Play loop
 
-## Implemented
+1. Inspect the map and your visible unit groups. Enemy units remain hidden until scouted.
+2. Write a directive in **Presidential Office**. Ordinary prose and explicit conditions are supported by the optional AI interpreter; offline interpretation supports common named-region actions and abstract policy programs.
+3. Review the actions, inferred assumptions, dollars, oil, fuel and recurring costs. Adjust the interpretation or reject it.
+4. Approve the directive in the Office, then **authorize funding in Bank**. Resources and unit groups are reserved without being spent twice.
+5. Ready every player and advance the month. Outcomes, paid costs and private briefing come from the committed simulation.
+6. Negotiate in **Foreign Affairs**, then extract a proposed agreement from the conversation. Each human government must separately approve the agreement directive and Bank funding. Chat alone never creates a treaty or payment.
 
-- Private-code rooms, 2–4 humans, solo practice, four selectable major powers; unclaimed governments use rule-based AI.
-- Original interactive, pannable, zoomable geographic 42-region atlas; country identity is separate from strategic geography. The geography is an original simplified abstraction using classic strategic territory names, not precise national borders.
-- Host-controlled and persisted timed monthly resolution; simultaneous departures, contested-target combat, fixed-round victory scoring.
-- Six department interfaces, structured confirmed orders and explicit constrained English parser.
-- Personnel/tanks/fighters, recruitment and procurement delays, fuel/ammunition consumption, upkeep, readiness, casualties, retreat and capture.
-- Income, GDP, treasury, debt, tax, transfers, industrial projects, material reservations and auditable financial entries.
-- Trade, alliances, peace, aid, immediate AI accept/reject, mutual human agreement checks and treaty expiration.
-- Server-enforced foreign-force privacy, expiring scouting/special-forces estimates, private briefings, public WNN event cards and archived briefings.
-- Private official messages, six diplomatic templates, automatic drafting, editable confirmation, immediate delivery, private reply threads and idempotent send requests.
-- Special-forces personnel commitments and return schedules; hidden foreign fleet and team lists.
-- Depot supply paths, infrastructure/distance/shared-capacity constraints, general supplies/spare parts, convoy delivery and blockades.
-- Eight naval vessel classes with procurement delays, fleet movement, abstract naval combat, fuel/ammo use and maintenance.
-- Private adviser/AI-government chat, optional OpenAI Responses adapter, explicit offline fallback and provider-independent gameplay.
-- Transactional SQLite snapshots, a unique resolution key, optimistic revision checks and restart-recovered deadlines.
-- Automated engine, persistence and HTTP multiplayer tests; prepared GitHub Actions workflow, Dockerfile, setup and design documentation.
+## Compact rules
 
-## Project structure
+Every government starts with **$1,500**, 100 oil and 100 fuel. Prices are fictional game dollars, not millions or billions.
 
-```text
-apps/server/              HTTP API, session authorization and SQLite store
-apps/web/public/          Responsive browser client (native ES modules)
-packages/game-engine/     Pure deterministic simulation, validation and projections
-packages/shared/          Original scenario, adjacency, costs and catalog
- database/migrations/     PostgreSQL adapter target schema (not active runtime)
-docs/                     Architecture, rules, original brief and tracked gaps
-tests/                    Engine, HTTP integration and atomic storage tests
-scripts/check.mjs         Syntax and required-file checks
-.github/workflows/ci.yml  Checks, tests and PostgreSQL migration CI
-```
+| Group | One unit represents | Recruitment |
+|---|---|---:|
+| Infantry | 1,000 personnel | $60 |
+| Armor | 120 tanks | $140 |
+| Bombers | 6 bomber aircraft | $220 |
+| Fighter jets | 12 aircraft | $180 |
+| Warships | 3 vessels | $200 |
+| Special forces | 100 personnel | $100 |
 
-## Configuration
+Seven buildings: air base, naval base, economic center, trade port, military factory, oil refinery, intelligence center. The in-game catalog lists all prices and monthly effects. New buildings and recruited groups become available during the next funded monthly resolution.
 
-The server reads `HOST`, `PORT`, and `DB_PATH` from the environment. `.env.example` documents defaults. It does **not** automatically load a `.env` file. Use `node --env-file=.env apps/server/server.mjs` if desired. No API key is required for core gameplay or template-based communication. Optional language-model drafting and conversations are implemented; set OPENAI_API_KEY and OPENAI_MODEL to enable them. No credentials are bundled. Verified account authentication is still pending.
+Policies cover economic, political, social and intelligence programs through bounded game effects. Complex ideas such as currency reform are abstract policy proposals; a narrative does not magically create real reserves, currencies, malware, assassinations or guaranteed enemy losses. Unsupported or ambiguous conditions need clarification.
+
+## Map and performance
+
+The original 42-territory world map is retained, but the active renderer uses **one path per territory**, no SVG filters or shadows, and `requestAnimationFrame` for camera changes. Polling checks revisions and returns HTTP 204 for unchanged state. Remote updates patch the existing map instead of recreating it. Editor nodes persist, and unsent text is stored locally per room; polling never replaces a typed draft.
+
+Trade-route markers include 28 representative chokepoints and economic sites: Hormuz, Gibraltar, Suez, Malacca, Bab el-Mandeb, Panama, Bosporus, Dardanelles, Dover, Danish/Korea/Taiwan Straits, Sunda, Lombok, Bering, Magellan, Kiel, major commercial centers and the Cape route. Controlling the modeled linked regions produces a disclosed monthly bonus. These are simplified strategic locations, not an exhaustive nautical chart.
+
+## Live AI
+
+Set **OPENAI_API_KEY** and **OPENAI_MODEL** in the server environment to enable broad narrative interpretation, general diplomatic replies and AI extraction of agreement terms. Never enter keys in the browser or commit them. Missing credentials/provider failures produce explicit offline mode. No live model call is included in automated verification; the provider contract is tested with a mock transport.
+
+Offline mode handles common movement, recruitment, buildings, scouting, messages, loans, and policy prose, with disclosed defaults. It cannot faithfully interpret unlimited arbitrary prose. The AI proposes; authoritative server rules calculate costs, validate resources and execute approved actions.
+
+## Storage and deployment
+
+Rooms, messages, directives and monthly results persist in `data/modern-risk.sqlite`. Keep the Mac awake while hosting. Use a persistent disk with a long-lived Node/Docker host for Internet play; **GitHub Pages cannot run the multiplayer server**. A Dockerfile is included. No public host/domain is deployed.
+
+Server configuration: `HOST`, `PORT`, `DB_PATH`. `.env.example` documents optional settings. Environment files are not auto-loaded; use `node --env-file=.env apps/server/server.mjs` if needed. Back up SQLite only with the process stopped or SQLite-aware backup tooling.
+
+## Development
 
 ```sh
-npm run check
 npm test
 npm run build
 ```
 
-`build` validates this buildless JavaScript application. It is not a TypeScript compiler or production bundler. The recommended React/TypeScript/PostgreSQL stack from the master brief is a later architecture milestone; this standalone edition prioritizes an offline-runnable authoritative vertical slice.
+The build command validates native JavaScript and required files; it is not a React bundle. The previous advanced engine and regression tests remain for older records. New UI and new matches use `packages/simple-engine/`, `simple-rules.js`, and `simple-map.js`. See `docs/v0.4-directive-game.md` for precise approval/resource/condition semantics and current limits.
 
-## Saving and deployment
+## National forces and reserves
 
-Stop the process before copying `data/` for a simple consistent backup (live WAL backups require SQLite-aware tooling). Restarting the same folder preserves rooms, players, queues and deadlines. An expired deadline resolves on restart. There is no in-game import/rollback UI yet.
+Every government starts with **30–32 total groups across deployed and reserve inventories**, not 30–32 in every territory. Presidential Office shows six columns for each owned region, a separate national reserve row, and total inventory. Reserves cannot move/attack until mobilized through the same paid directive/Bank workflow; returning deployed groups to reserve also has a small cost. Aircraft mobilization requires an air base; warships require a coastal naval base.
 
-Docker instructions are in `docs/deployment.md`. The container requires a persistent volume; it must run as a single authoritative writer. Stateless Vercel/Cloudflare deployment cannot host this SQLite process unchanged.
+| Government | Infantry | Tanks | Special forces | Fighters | Warships | Bombers | Total | Advantage |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| United States | 8 | 5 | 3 | 7 | 5 | 4 | 32 | Fighter/bomber combat power +10% |
+| European Coalition | 10 | 6 | 4 | 4 | 4 | 3 | 31 | Monthly domestic income +10% |
+| China | 13 | 8 | 2 | 4 | 3 | 2 | 32 | Recruitment cost −10% |
+| Russia | 8 | 10 | 3 | 3 | 3 | 4 | 31 | Tank combat power +15% |
 
-Public source publication to `fdijo-cyber/modern-risk` is authorized. Deployment remains separate: GitHub Pages cannot host this Node/SQLite backend. See `docs/github-setup.md` and `docs/deployment.md`.
+AI minor governments have deterministic 30- or 31-group defense, maritime or commercial profiles, with a disclosed infantry/naval/income bonus. These are fictional balance profiles, not real military inventories. After recruitment/losses the national total can change.
 
-## v0.3 operating notes
-
-Read `docs/v0.3-features.md` for privacy, official-message, logistics/naval, and AI setup details. Online friends need the same reachable server address; this ZIP does not create public hosting. Never paste API keys into the game or a message. Live-provider testing and a production deployment remain pending.
-
-## Geographic map (v0.3)
-
-The map uses 42 original SVG territory paths across six continents, troop counters, tank/aircraft silhouettes, and your own fleet markers. Select a territory or use search; scroll/pinch to zoom, drag to pan, toggle labels/sea links, and change the political/intelligence/terrain/supply layers. Enemy forces remain unknown unless a valid reconnaissance report exists. All map artwork is bundled; external map services are not required.
+Examples in the Office: “Mobilize two infantry units from reserve to Alaska.” “Return one tank unit from Alaska to reserve.” Both interpretations show dollar/oil/fuel costs before approval.

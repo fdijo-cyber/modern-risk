@@ -82,3 +82,13 @@ Still incomplete: the whole original master specification. Advanced naval aviati
 ## v0.3 map and public-source update
 
 Original geographic SVG paths now replace all hex tiles. The classic 42-region topology remains unchanged; the map is interactive with counters, unit/fleet symbols, search, four layers, sea links, labels, keyboard selection, pan, wheel zoom, pinch handling and fullscreen. Frozen enemy estimates remain separate from live counts. Public repository publication is explicitly authorized, overriding the original private-only requirement. Hosting and domain setup remain separate.
+
+## v0.4 superseding gameplay/UI direction
+
+The latest user explicitly requested four tabs, one directive composer, small game-dollar balances and Risk-style unit groups. **This supersedes the earlier ministry-heavy v0.1–v0.3 product layout and monetary scales.** Current default new matches and the active browser client follow `docs/v0.4-directive-game.md`; earlier coverage tables describe the separately retained advanced engine.
+
+Implemented: Map/Office/Bank/Foreign Affairs, single prose editor, assumptions and editable estimates, Office + Bank approval gates, $1,500 start, six grouped types, seven building types, oil/fuel and money reservations, compact political/economic/social indicators, private briefings, messenger conversations, proposed/approved contracts, scout shortcuts, 28 strategic sites and flat low-cost map rendering. Drafts are retained across updates. Existing advanced records remain preserved and are not silently converted.
+
+Remaining: live AI provider setup/verification, broader conditional language, more sophisticated policy/contract mechanics and military group abilities, balancing, measured tablet performance, production authentication, hosting and domain deployment. Arbitrary prose can be proposed, but only modeled actions/effects can be executed; offline mode is explicitly limited. No completed full-master-spec claim.
+
+Latest force-roster steering: six types are infantry/special forces/fighter jets/tanks/warships/bombers, replacing the earlier draft artillery group. All governments start with 30–32 national groups, shared across deployment and reserves. Office shows regional type counts, reserves, totals and each national advantage. Mobilize/stand-down orders use the same paid approval pipeline; starting mixes and effects are in README.md.
