@@ -70,3 +70,9 @@ test('human ultimatum preserves consent and resumes only its authorized refusal 
 test('secret policy intent cannot leak through legacy public policy events',()=>{
  const g=world(),r=submitChair(g,'us','Confidential velvet policy',{kind:'directive',analysis:'Secret political program',objectives:[obj('secret',{action:'policy',category:'political',purpose:'velvet-private-name',budget:100,visibility:'secret'})]});assert.ok(r.game.countries.us.initiatives.some(p=>p.visibility==='secret'));assert.ok(!JSON.stringify(simpleView(r.game,'eu')).includes('velvet-private-name'));assert.ok(!JSON.stringify(r.game.chairArticles).includes('velvet-private-name'));
 });
+
+test('Gemini Chair requests the structured output contract and reports a concrete persistent validation error',async()=>{
+ const g=world();let attempts=0;
+ const p=await prepareChair(g,'us','Create a national bank',{}, {model:async args=>{attempts++;assert.equal(args.responseSchema.type,'OBJECT');assert.equal(args.responseSchema.properties.objectives.type,'ARRAY');return {text:JSON.stringify({kind:'directive',analysis:'Test',objectives:[obj('bank',{action:'initiative',budget:100000})]})};}});
+ assert.equal(attempts,3);assert.equal(p.kind,'deferred');assert.match(p.analysis,/Budget\\/amount exceeds/);assert.equal(g.countries.us.treasury,1500);
+});
