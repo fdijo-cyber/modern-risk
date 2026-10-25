@@ -1,3 +1,7 @@
+# Current: v0.7.2 persistent formation condition
+
+Backend formations now have persistent health, experience, terrain adaptations, weaponry, supply and healing rates. Paid courses and completed training initiatives apply actual benefits. New matches offer one-hour months by default. Gemini HTTP server failures retry safely and report their status. See [unit condition](unit-condition.md).
+
 # Current: v0.7.1 game-first attacks and war feedback
 
 Short attack directives now infer available formations and a valid adjacent origin. Map territory panels include Plan attack. Defender reactions use six context-dependent seeded response types with real balances and persistent consequences. See the v0.7.1 section in [Crisis Chair](crisis-chair.md). Existing saves use additive optional fields.

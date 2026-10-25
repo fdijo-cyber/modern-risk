@@ -1,3 +1,4 @@
+import {awardTraining} from './formations.mjs';
 // Extensible state effects: novel institutions and policies use this schema, not new handlers.
 const STATS=new Set(['economic','political','social','research','counterintel','readiness']);
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
@@ -19,7 +20,8 @@ export function normalizeInitiative(g,cid,raw){
  if(foreign&&effects.some(e=>e.stat==='fortification')){effects=effects.filter(e=>e.stat!=='fortification');effects.push({stat:'economic',value:1});adjustments.push('Foreign military construction revised to a civilian cooperation benefit; host military access was not granted.');}
  const requested=JSON.stringify(raw.effects??[]);if(effects.some(e=>!requested.includes(String(e.value))))adjustments.push('Effect magnitudes bounded by the funded budget; no unsupported resource creation allowed.');
  const risk=whole(raw.risk,15,5,65),upkeep=whole(raw.upkeep,Math.ceil(budget/50),0,Math.floor(budget/5));
- return {title,intent,category,visibility,target,trigger:typeof raw.trigger==='string'?raw.trigger.slice(0,500):null,budget,duration,lifetime,effects,risk,upkeep,adjustments,foreign,rationale:String(raw.rationale??'The government can establish the program now; delivery depends on funding, implementation time and national capacity.').slice(0,1600)};
+ const training=/training|exercise/i.test(category+' '+intent)&&/military|combat|army|infantry|naval|air force|terrain|soldier|officer|training/i.test(category+' '+intent),trainingTerrain=g.regions.some(r=>r.terrain===raw.trainingTerrain)?raw.trainingTerrain:['mountain','urban','plains'].find(t=>new RegExp(t,'i').test(intent));
+ return {title,intent,category,visibility,target,training,...(trainingTerrain?{trainingTerrain}:{}),trigger:typeof raw.trigger==='string'?raw.trigger.slice(0,500):null,budget,duration,lifetime,effects,risk,upkeep,adjustments,foreign,rationale:String(raw.rationale??'The government can establish the program now; delivery depends on funding, implementation time and national capacity.').slice(0,1600)};
 }
 function event(g,cid,p,headline,body){if(p.visibility==='public'){g.publicEvents??=[];g.news??=[];g.publicEvents.push({round:g.round,country:cid,type:'initiative',headline,body});g.news.push({round:g.round,type:'initiative',headline});}}
 export function launchInitiative(g,cid,o){
@@ -55,7 +57,7 @@ export function tickInitiatives(g,cid){
     const fails=roll<p.risk;p.status=fails?'failed':'completed';p.outcome=fails?'Implementation failed its delivery assessment. Investment was spent; no claimed benefits applied.':'Implementation completed; validated effects applied.';
     if(!fails){p.completedAt=g.round;p.expires=g.round+p.lifetime-1;}
     if(!fails&&!p.effectsApplied)for(const e of p.effects){if(STATS.has(e.stat))c[e.stat]=clamp((c[e.stat]??(e.stat==='readiness'?100:0))+e.value,0,100);if(e.stat==='fortification'&&g.regions[p.target].owner===cid)g.regions[p.target].fortification=clamp((g.regions[p.target].fortification??0)+e.value,0,5);}
-    if(!fails)p.effectsApplied=true;
+    if(!fails&&!p.effectsApplied&&p.training&&g.regions[p.target].owner===cid){const detail=awardTraining(g,cid,{target:p.target,terrain:p.trainingTerrain,budget:p.budget,title:p.title});p.history.push({round:g.round,text:detail});p.trainingApplied=true;}if(!fails)p.effectsApplied=true;
     event(g,cid,p,`${c.name}: ${p.title} ${p.status}`,`${p.outcome}${fails?'':` Measured effects: ${p.effects.map(e=>e.stat==='income'?`$${e.value}/month productivity income`:`${e.stat} ${e.value>0?'+':''}${e.value}`).join(', ')}.`}`);
    }
   }

@@ -41,8 +41,8 @@ export const server=http.createServer(async(req,res)=>{
     fail(typeof data.name==='string'&&data.name.trim().length>0&&data.name.length<=40,'Enter a name (1–40 characters)');
     fail(POWERS.includes(data.country),'Select a starting power');
     const mode=data.mode??'multiplayer';fail(['solo','multiplayer'].includes(mode),'Choose solo or multiplayer');
-    const maxPlayers=mode==='solo'?1:Number(data.maxPlayers??4),timer=Number(data.timer??0),maxRounds=Number(data.maxRounds??24),difficulty=Number(data.difficulty??2);
-    fail((mode==='solo'?maxPlayers===1:[2,3,4].includes(maxPlayers))&&[0,60,180,300,600].includes(timer)&&Number.isInteger(maxRounds)&&maxRounds>=2&&maxRounds<=120&&Number.isInteger(difficulty)&&difficulty>=1&&difficulty<=5,'Invalid room configuration');
+    const maxPlayers=mode==='solo'?1:Number(data.maxPlayers??4),timer=Number(data.timer??3600),maxRounds=Number(data.maxRounds??24),difficulty=Number(data.difficulty??2);
+    fail((mode==='solo'?maxPlayers===1:[2,3,4].includes(maxPlayers))&&[0,60,180,300,600,3600].includes(timer)&&Number.isInteger(maxRounds)&&maxRounds>=2&&maxRounds<=120&&Number.isInteger(difficulty)&&difficulty>=1&&difficulty<=5,'Invalid room configuration');
     const code=randomBytes(5).toString('hex').toUpperCase(),secret=token(),id=token();
     const room={code,name:String(data.roomName||'World in motion').slice(0,60),host:id,mode,maxPlayers,timer,deadline:null,status:'lobby',players:[{id,name:data.name.trim(),country:data.country,tokenHash:hash(secret),ready:false}],game:(data.ruleset==='legacy'?seedGame:seedSimple)({seed:randomBytes(4).readUInt32LE(),maxRounds,difficulty})};if(mode==='solo'){room.status='active';room.game.countries[data.country].human=true;room.deadline=timer?Date.now()+timer*1000:null;}store.save(room);return send(201,{token:secret,room:roomView(room,room.players[0])});
    }
