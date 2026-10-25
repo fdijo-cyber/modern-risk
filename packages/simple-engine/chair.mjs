@@ -46,7 +46,7 @@ export async function prepareChair(g,cid,text,context={},deps={}){
  if(question(text))return {kind:'question',analysis:'Historical review only; no actions authorized.',answer:historicalAnswer(g,cid,text),objectives:[],source:'history'};
  let correction;
  for(let attempt=0;attempt<2;attempt++){
-  const response=await (deps.model??modelText)({...deps,jsonMode:true,maxOutputTokens:9000,outputLimit:55000,instructions,input:{directive:text,selectedRegion:context.region,retrieval,catalog:UNIT_TYPES,correction}});
+  const response=await (deps.model??modelText)({...deps,jsonMode:true,timeoutMs:45000,maxOutputTokens:9000,outputLimit:55000,instructions,input:{directive:text,selectedRegion:context.region,retrieval,catalog:UNIT_TYPES,correction}});
   if(!response.text)return {kind:'deferred',analysis:response.reason??'Chair unavailable; no completed outcome is fabricated.',objectives:[],source:'unavailable'};
   try{const p=validateChairPlan(JSON.parse(response.text.replace(/^```(?:json)?\s*|\s*```$/g,'')),g,cid);return {...p,source:'gemini-chair',corrections:attempt};}catch(e){correction={error:e.message,limits:{treasury:g.countries[cid].treasury,oil:g.countries[cid].oil,fuel:g.countries[cid].fuel,owned:g.regions.filter(r=>r.owner===cid).map(r=>({id:r.id,units:r.units})),governmentIds:Object.keys(g.countries)}};}
  }
