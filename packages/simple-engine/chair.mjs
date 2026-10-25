@@ -2,6 +2,7 @@ import {ensureFormations,detachFormations,mergeFormations,trainFormations,condit
 // The Chair proposes declarative objectives. Only this engine commits their effects.
 import {createHash} from 'node:crypto';
 import {modelText} from '../ai-engine/service.mjs';
+import {chairResponseSchema} from './chair-schema.mjs';
 import {simpleView,adjudicateDirective,makeDirective,decideDirective,resolveSimple,assertSimple,syncRegion,UNIT_TYPES,sendOfficial} from './index.mjs';
 const copy=structuredClone;
 const digest=x=>createHash('sha256').update(JSON.stringify(x)).digest('hex');
@@ -45,12 +46,12 @@ export async function prepareChair(g,cid,text,context={},deps={}){
  g=copy(g);ensureFormations(g);const retrieval=chairHistory(g,cid,text);
  if(question(text))return {kind:'question',analysis:'Historical review only; no actions authorized.',answer:historicalAnswer(g,cid,text),objectives:[],source:'history'};
  let correction;
- for(let attempt=0;attempt<2;attempt++){
-  const response=await (deps.model??modelText)({...deps,jsonMode:true,timeoutMs:45000,maxOutputTokens:9000,outputLimit:55000,instructions,input:{directive:text,selectedRegion:context.region,retrieval,catalog:UNIT_TYPES,correction}});
+ for(let attempt=0;attempt<3;attempt++){
+  const response=await (deps.model??modelText)({...deps,jsonMode:true,responseSchema:chairResponseSchema,timeoutMs:45000,maxOutputTokens:9000,outputLimit:55000,instructions,input:{directive:text,selectedRegion:context.region,retrieval,catalog:UNIT_TYPES,correction}});
   if(!response.text)return {kind:'deferred',analysis:response.reason??'Chair unavailable; no completed outcome is fabricated.',objectives:[],source:'unavailable'};
   try{const p=validateChairPlan(JSON.parse(response.text.replace(/^```(?:json)?\s*|\s*```$/g,'')),g,cid);return {...p,source:'gemini-chair',corrections:attempt};}catch(e){correction={error:e.message,limits:{treasury:g.countries[cid].treasury,oil:g.countries[cid].oil,fuel:g.countries[cid].fuel,owned:g.regions.filter(r=>r.owner===cid).map(r=>({id:r.id,units:r.units})),governmentIds:Object.keys(g.countries)}};}
  }
- return {kind:'deferred',analysis:'Chair proposals failed schema validation after constrained correction. No world effects committed; retry is safe.',objectives:[],source:'invalid-proposal'};
+ return {kind:'deferred',analysis:'Chair proposals failed validation after correction: '+String(correction?.error??'Unknown validation error').slice(0,240)+'. No world effects committed; retry is safe.',objectives:[],source:'invalid-proposal'};
 }
 function historicalAnswer(g,cid,text){
  const history=chairHistory(g,cid,text),month=Number(/(?:month|round)\s+(\d+)/i.exec(text)?.[1]??0),last=[...(g.countries[cid].chairRecords??[])].reverse().find(r=>(!month||r.round===month)&&r.objectives?.some(o=>['operation','attack'].includes(o.action)));
