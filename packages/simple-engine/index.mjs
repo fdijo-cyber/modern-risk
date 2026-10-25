@@ -1,3 +1,4 @@
+import {normalizeInitiative,launchInitiative,tickInitiatives} from './initiatives.mjs';
 import {localDiplomat} from './diplomat.mjs';
 import {seedGame} from '../shared/scenario.mjs';
 import {UNIT_TYPES,BUILDINGS,SITES,sumUnits} from '../../apps/web/public/simple-rules.js';
@@ -9,7 +10,7 @@ export const deployedForces=(g,cid)=>g.regions.filter(r=>r.owner===cid).reduce((
 export const totalForces=(g,cid)=>deployedForces(g,cid)+Object.values(g.countries[cid].reserves??{}).reduce((s,n)=>s+n,0);
 export function syncRegion(r){r.personnel=(r.units.infantry??0)*1000+(r.units.special??0)*100;r.tanks=(r.units.tanks??0)*120;r.fighters=(r.units.fighters??0)*12;r.bombers=(r.units.bombers??0)*6;return r;}
 export function seedSimple(options){const g=seedGame(options);g.ruleset='simple';g.version=5;g.militaryVersion=2;g.fleets=[];g.missions=[];g.messages=[];g.agreements=[];g.serial=0;
- for(const c of Object.values(g.countries)){Object.assign(c,{treasury:1500,debt:0,oil:100,fuel:100,economic:65,political:70,social:70,stability:70,approval:70,orders:[],directives:[],ledger:[],briefings:[],loans:[],recurring:[],results:[],intel:{}});}
+ for(const c of Object.values(g.countries)){Object.assign(c,{treasury:1500,debt:0,oil:100,fuel:100,economic:65,political:70,social:70,stability:70,approval:70,supplies:100,ammo:100,spares:50,readiness:100,orders:[],directives:[],ledger:[],briefings:[],loans:[],recurring:[],results:[],intel:{}});}
  const profiles={
   us:{label:'Air superiority',advantage:'Fighter and bomber combat power +10%.',bonus:'air',units:{infantry:8,tanks:5,special:3,fighters:7,navy:5,bombers:4}},
   eu:{label:'Commercial network',advantage:'Monthly domestic income +10%.',bonus:'income',units:{infantry:10,tanks:6,special:4,fighters:4,navy:4,bombers:3}},
@@ -54,6 +55,8 @@ export function inspectOrder(g,cid,raw){const c=g.countries[cid],o=clone(raw);mu
   summary=`${o.method==='special'?'Special-forces reconnaissance':'Scout'} ${target.name}`;
  }else if(o.action==='policy'){
   must(['economic','political','social','intelligence'].includes(o.category),'Choose a policy category');must(typeof o.purpose==='string'&&o.purpose.trim().length>0&&o.purpose.length<=3000,'Describe the policy');o.budget=o.budget??100;must(integer(o.budget,25,1000),'Policy budget must be $25–$1,000');money=o.budget;oil=Math.ceil(money/100);fuel=Math.ceil(money/100);summary=`${o.category} policy: ${o.purpose.slice(0,100)}`;
+ }else if(o.action==='initiative'){
+  Object.assign(o,normalizeInitiative(g,cid,o));money=o.budget;oil=Math.ceil(money/150);fuel=Math.ceil(money/150);recurring=o.upkeep;summary=`Establish ${o.title} in ${g.regions[o.target].name}`;
  }else if(o.action==='message'){
   must(g.countries[o.country]&&o.country!==cid,'Select a recipient');must(typeof o.body==='string'&&o.body.trim().length>0&&o.body.length<=6000,'Message must contain 1–6,000 characters');o.subject=String(o.subject??'Official communication').slice(0,160);money=5;summary=`Send official message to ${g.countries[o.country].name}`;
  }else if(o.action==='loan'){
@@ -97,16 +100,17 @@ export function sendOfficial(g,cid,country,body,{automated=false,replyTo=null}={
 export function proposeAgreement(g,cid,country,terms){must(g.countries[country]&&country!==cid,'Select a government');must(['trade','aid','loan','peace','alliance'].includes(terms.kind),'Unknown agreement type');const kind=terms.kind;must(integer(terms.amount??0,0,1000)&&integer(terms.months??6,1,12),'Agreement amount or duration invalid');if(['aid','loan'].includes(kind))must(terms.amount>0,'Aid/loan needs a positive amount');
  const from=terms.from??cid,to=from===cid?country:cid;must([cid,country].includes(from),'Agreement payer must be one of the two governments');
  const a={id:`agreement-${++g.serial}`,title:`${kind} agreement`,parties:[cid,country],status:'offered',created:g.round,consent:[],terms:{kind,from,to,amount:terms.amount??0,months:terms.months??6}};g.agreements.push(a);sendOfficial(g,cid,country,`Formal proposal: ${kind}; ${g.countries[from].name} pays ${g.countries[to].name} $${a.terms.amount}; ${a.terms.months} months. Both governments must approve its directive and funding.`,{});
- if(!g.countries[country].human){const acceptable=kind!=='loan'||a.terms.amount<=500;if(acceptable)a.consent.push(country);sendOfficial(g,country,cid,acceptable?'We accept these proposed terms in principle, subject to your formal funding approval.':'We cannot accept this loan amount; please revise the proposal.',{automated:true});}
+ if(!g.countries[country].human){const atWar=(g.wars??[]).some(w=>w.parties.includes(cid)&&w.parties.includes(country)),acceptable=(kind!=='loan'||a.terms.amount<=500)&&(!atWar||kind==='peace');a.response=acceptable?'accepted':'counteroffer';a.responseReason=atWar&&kind!=='peace'?'A peace agreement must precede cooperation during war.':kind==='loan'&&a.terms.amount>500?'The requested loan exceeds our lending threshold.':'Terms are feasible within current relations and resources.';if(!acceptable){a.status='counteroffer';a.counterTerms={...a.terms,kind:atWar?'peace':kind,amount:atWar?0:Math.min(500,a.terms.amount)};}if(acceptable)a.consent.push(country);sendOfficial(g,country,cid,acceptable?`We accept: ${kind}, $${a.terms.amount}, ${a.terms.months} months. ${a.responseReason}`:`Counteroffer: ${a.counterTerms.kind}, $${a.counterTerms.amount}, ${a.terms.months} months. ${a.responseReason}`,{automated:true});}
  return a;
 }
 function activateAgreement(g,a){if(a.status==='active')return;const {from,to,amount,kind,months}=a.terms;const payer=g.countries[from],recipient=g.countries[to];must(payer.treasury>=amount,'Agreement payer cannot fund the transfer');if(kind==='loan')must(recipient.debt+amount<=2000,'Borrower would exceed the $2,000 debt ceiling');if(amount){cash(payer,g.round,-amount,`${kind} agreement`);cash(recipient,g.round,amount,`${kind} agreement`);}a.status='active';a.starts=g.round;a.expires=g.round+months-1;
+ if(['peace','alliance'].includes(kind))g.wars=(g.wars??[]).filter(w=>!w.parties.every(id=>a.parties.includes(id)));
  if(kind==='loan'){recipient.debt+=amount;recipient.loans.push({id:a.id,lender:from,principal:amount,remaining:amount,installment:Math.ceil(amount*1.1/months),monthsLeft:months});}
  g.news.push({type:'diplomacy',round:g.round,headline:`${g.countries[from].name} and ${g.countries[to].name}: ${kind} agreement activated`});
 }
 const random=seed=>{let x=seed>>>0;return ()=>{x=(Math.imul(x,1664525)+1013904223)>>>0;return x/4294967296;};};
 const force=(r,bonus)=>Object.entries(r.units).reduce((s,[type,n])=>s+n*UNIT_TYPES[type].power*(bonus==='air'&&['fighters','bombers'].includes(type)?1.1:bonus==='armor'&&type==='tanks'?1.15:bonus==='infantry'&&type==='infantry'?1.1:bonus==='navy'&&type==='navy'?1.15:1),0);
-export function resolveSimple(input,{immediate=false,directiveId=null}={}){must(input.phase==='planning','Month already resolved');const g=clone(input),rng=random(g.seed+g.round*7919),round=g.round;g.news??=[];g.publicEvents??=[];g.publicBriefings??=[];const opening=Object.fromEntries(Object.values(g.countries).map(c=>[c.id,c.treasury]));
+export function resolveSimple(input,{immediate=false,directiveId=null}={}){must(input.phase==='planning','Month already resolved');const g=clone(input),rng=random(g.seed+g.round*7919),round=g.round;g.news??=[];g.publicEvents??=[];g.publicBriefings??=[];const opening=Object.fromEntries(Object.values(g.countries).map(c=>[c.id,((c.ledger.find(l=>l.round===g.round)?.balance??c.treasury)-(c.ledger.find(l=>l.round===g.round)?.amount??0))]));
  // Autonomous governments pay for development through exactly the same approval path.
  for(const c of Object.values(g.countries))if(!immediate&&!c.human){
   const owned=g.regions.filter(r=>r.owner===c.id),home=owned[0];if(!home)continue;const orders=[];
@@ -128,14 +132,14 @@ export function resolveSimple(input,{immediate=false,directiveId=null}={}){must(
    const t=g.regions[o.target];must(c.treasury>=o.cost&&c.oil>=o.oil&&c.fuel>=o.fuel,'Resources no longer available; action skipped without payment');
    if(['move','attack'].includes(o.action)){
     must(g.regions[o.origin].owner===c.id,'Origin no longer owned');for(const [type,n] of Object.entries(o.units))must(g.regions[o.origin].units[type]>=n,'Committed units no longer available');
-    if(o.action==='attack')must(!g.agreements.some(a=>a.status==='active'&&a.expires>=round&&['peace','alliance'].includes(a.terms.kind)&&a.parties.includes(c.id)&&a.parties.includes(t.owner)),'Active treaty prevents this attack');
+    if(o.action==='attack'){must((c.ammo??100)>=Object.values(o.units).reduce((a,n)=>a+n,0),'Insufficient ammunition for this attack');}if(o.action==='attack')must(!g.agreements.some(a=>a.status==='active'&&a.expires>=round&&['peace','alliance'].includes(a.terms.kind)&&a.parties.includes(c.id)&&a.parties.includes(t.owner)),'Active treaty prevents this attack');
    }
    if(['build','recruit','mobilize'].includes(o.action))must(t.owner===c.id,'Destination no longer owned');
    if(o.action==='build')must(!t.buildings[o.building],'Building already completed by another directive');
    if(o.action==='mobilize')for(const [k,n] of Object.entries(o.units))must((c.reserves?.[k]??0)>=n,'Reserved groups no longer available');
    if(o.action==='reserve')for(const [k,n] of Object.entries(o.units))must(g.regions[o.origin].owner===c.id&&g.regions[o.origin].units[k]>=n,'Deployed groups no longer available');
    if(o.action==='treaty'){
-    cash(c,round,-5,'Diplomatic proposal');const a=proposeAgreement(g,c.id,o.country,{kind:o.kind,amount:o.amount,months:o.months,from:o.from});a.consent.push(c.id);
+    cash(c,round,-5,'Diplomatic proposal');const a=proposeAgreement(g,c.id,o.country,{kind:o.kind,amount:o.amount,months:o.months,from:o.from});a.consent.push(c.id);o.agreement=a.id;
     d.results.push(`${o.summary} — sent; $5 communication fee paid. ${a.parties.every(id=>a.consent.includes(id))?'Both governments consented; activation pending settlement.':'Awaiting counterparty consent; transfer not yet charged.'}`);continue;
    }
    if(o.action==='war'){
@@ -144,12 +148,13 @@ export function resolveSimple(input,{immediate=false,directiveId=null}={}){must(
    }
    if(o.action==='agreement'){const a=g.agreements.find(a=>a.id===o.agreement);must(a&&a.status!=='active','Agreement already activated');if(!a.consent.includes(c.id))a.consent.push(c.id);d.results.push('Agreement consent recorded; payment is pending until both governments’ funding approvals.');continue;}
    cash(c,round,-o.cost,o.summary);c.oil-=o.oil;c.fuel-=o.fuel;
-   if(['move','attack'].includes(o.action)){for(const [type,n] of Object.entries(o.units))g.regions[o.origin].units[type]-=n;if(o.action==='move'&&t.owner===c.id)for(const [type,n] of Object.entries(o.units))t.units[type]+=n;else movements.push({...o,cid:c.id,directive:d.id});}
+   if(['move','attack'].includes(o.action)){if(o.action==='attack')c.ammo=(c.ammo??100)-Object.values(o.units).reduce((a,n)=>a+n,0);g.movements??=[];g.movements.push({id:`movement-${++g.serial}`,round,country:c.id,origin:o.origin,target:o.target,action:o.action,units:clone(o.units)});for(const [type,n] of Object.entries(o.units))g.regions[o.origin].units[type]-=n;if(o.action==='move'&&t.owner===c.id)for(const [type,n] of Object.entries(o.units))t.units[type]+=n;else movements.push({...o,cid:c.id,directive:d.id});}
    else if(o.action==='mobilize')for(const [k,n] of Object.entries(o.units)){c.reserves[k]-=n;t.units[k]+=n;}
    else if(o.action==='reserve')for(const [k,n] of Object.entries(o.units)){g.regions[o.origin].units[k]-=n;c.reserves[k]=(c.reserves[k]??0)+n;}
    else if(o.action==='recruit')t.units[o.unit]+=o.quantity;
    else if(o.action==='build')t.buildings[o.building]=1;
-   else if(o.action==='policy'){const effect=Math.min(10,Math.floor(o.budget/25));if(o.category==='economic')c.economic=cap(c.economic+effect);else if(o.category==='social')c.social=cap(c.social+effect);else if(o.category==='political')c.political=cap(c.political+effect);else c.counterintel=cap((c.counterintel??0)+effect);}
+   else if(o.action==='initiative'){const launched=launchInitiative(g,c.id,o);d.results.push(launched.result);d.results.push(...o.adjustments.map(a=>'Adjudication adjustment: '+a));}
+   else if(o.action==='policy'){const effect=Math.min(10,Math.floor(o.budget/25));if(o.category==='economic')c.economic=cap(c.economic+effect);else if(o.category==='social')c.social=cap(c.social+effect);else if(o.category==='political')c.political=cap(c.political+effect);else c.counterintel=cap((c.counterintel??0)+effect);c.policies??=[];c.policies.push({id:`policy-${++g.serial}`,created:round,category:o.category,intent:o.purpose,budget:o.budget,effect,visibility:o.category==='intelligence'?'secret':'public',status:'implemented'});}
    else if(o.action==='scout'){const precision=(o.method==='special'?.15:g.regions.some(r=>r.owner===c.id&&r.buildings.intelligence)?.25:.35)+(g.countries[t.owner].counterintel??0)/500;const units=sumUnits(t);c.intel[t.id]={round,expires:round+(o.method==='special'?2:1),controller:t.owner,low:Math.max(0,Math.floor(units*(1-precision))),high:Math.ceil(units*(1+precision)),unitEstimate:true,source:o.method==='special'?'Special forces':'Scouts',confidence:o.method==='special'?'High':'Medium'};}
    else if(o.action==='loan'){cash(c,round,o.amount,'Bank loan');c.debt+=o.amount;c.loans.push({id:`loan-${++g.serial}`,lender:'bank',principal:o.amount,remaining:o.amount,installment:Math.ceil(o.amount*1.1/o.months),monthsLeft:o.months});}
    else if(o.action==='repay'){let remaining=o.amount;for(const l of c.loans){const paid=Math.min(remaining,l.remaining);l.remaining-=paid;remaining-=paid;}c.debt-=o.amount;}
@@ -172,25 +177,30 @@ export function resolveSimple(input,{immediate=false,directiveId=null}={}){must(
  // Seeded initiative makes submitted ordering irrelevant; every unit is detached once.
  for(const m of movements.filter(m=>m.action==='attack').map(m=>({...m,initiative:rng()})).sort((a,b)=>a.initiative-b.initiative)){
   const t=g.regions[m.target],d=g.countries[m.cid].directives.find(d=>d.id===m.directive);if(t.owner===m.cid){for(const [k,n] of Object.entries(m.units))t.units[k]+=n;continue;}
-  const attacking=force({units:m.units},g.countries[m.cid].bonus)*(.85+rng()*.3),defending=force(t,g.countries[t.owner].bonus)*(t.terrain==='mountain'?1.3:1.1)*(.85+rng()*.3),win=attacking>defending;
-  const oldOwner=t.owner;const casualties={};for(const [type,n] of Object.entries(m.units)){casualties[type]=Math.min(n,Math.floor(n*(win?.2:.4)+(rng()<.3?1:0)));m.units[type]-=casualties[type];}
+  const attacking=force({units:m.units},g.countries[m.cid].bonus)*((g.countries[m.cid].readiness??100)/100)*(.85+rng()*.3),defending=force(t,g.countries[t.owner].bonus)*((t.readiness??100)/100)*(t.terrain==='mountain'?1.3:1.1)*(1+(t.fortification??0)*.08)*(.85+rng()*.3),win=attacking>defending;
+  const oldOwner=t.owner,defenderBefore=clone(t.units);g.wars??=[];if(!g.wars.some(w=>w.parties.includes(m.cid)&&w.parties.includes(oldOwner)))g.wars.push({parties:[m.cid,oldOwner],round});t.contestedUntil=round+1;const casualties={};for(const [type,n] of Object.entries(m.units)){casualties[type]=Math.min(n,Math.floor(n*(win?.2:.4)+(rng()<.3?1:0)));m.units[type]-=casualties[type];}
   if(win&&(m.units.infantry??0)+(m.units.special??0)>0){const retreat=t.adjacent.map(id=>g.regions[id]).find(r=>r.owner===oldOwner);if(retreat)for(const [k,n] of Object.entries(t.units))retreat.units[k]+=Math.floor(n*.5);t.owner=m.cid;t.units=Object.fromEntries(Object.keys(UNIT_TYPES).map(k=>[k,m.units[k]??0]));g.countries[m.cid].political=cap(g.countries[m.cid].political+2);}
   else{const home=g.regions[m.origin].owner===m.cid?g.regions[m.origin]:g.regions.find(r=>r.owner===m.cid);if(home)for(const [k,n] of Object.entries(m.units))home.units[k]+=n;}
-  const conquered=t.owner===m.cid;const headline=`${g.countries[m.cid].name}: ${conquered?'captures':'attack stopped at'} ${t.name}`;g.news.push({type:'battle',round,headline});d.results.push(headline+`; attacking group losses: ${Object.entries(casualties).filter(([,n])=>n).map(([k,n])=>`${n} ${UNIT_TYPES[k].name}`).join(', ')||'none'}`);
+  const conquered=t.owner===m.cid;const defenderLosses=Object.fromEntries(Object.entries(defenderBefore).map(([k,n])=>[k,conquered?n-(t.adjacent.some(id=>g.regions[id].owner===oldOwner)?Math.floor(n*.5):0):0]));for(const [cid,losses] of [[m.cid,casualties],[oldOwner,defenderLosses]]){const c=g.countries[cid];c.battleReports??=[];c.battleReports.push({round,region:t.id,attacker:m.cid,defender:oldOwner,outcome:conquered?'captured':'attack stopped',ownLosses:clone(losses)});}const headline=`${g.countries[m.cid].name}: ${conquered?'captures':'attack stopped at'} ${t.name}`;g.news.push({type:'battle',round,headline});d.results.push(headline+`; attacking group losses: ${Object.entries(casualties).filter(([,n])=>n).map(([k,n])=>`${n} ${UNIT_TYPES[k].name}`).join(', ')||'none'}`);
  }
- for(const a of g.agreements.filter(a=>a.status==='offered'&&a.parties.every(id=>a.consent.includes(id))))try{activateAgreement(g,a);}catch(err){a.status='failed';a.failure=err.message;}
+ for(const a of g.agreements.filter(a=>a.status==='offered'&&a.parties.every(id=>a.consent.includes(id))))try{activateAgreement(g,a);for(const c of Object.values(g.countries))for(const d of c.directives.filter(d=>d.round===round&&d.orders.some(o=>o.agreement===a.id)))d.results.push(`${a.title} activated this month; $${a.terms.amount} transferred if applicable; term ${a.terms.months} months.`);}catch(err){a.status='failed';a.failure=err.message;}
  if(immediate){for(const r of g.regions)syncRegion(r);g.phase='planning';assertSimple(g);return g;}
  for(const a of g.agreements)if(a.status==='active'&&a.expires<round)a.status='expired';
  for(const c of Object.values(g.countries)){
+  const projectResults=tickInitiatives(g,c.id);
   c.results=c.directives.filter(d=>d.round===round&&['executed','failed','partial'].includes(d.status)).map(d=>({id:d.id,summary:d.text.slice(0,120),results:clone(d.results)}));
+  if(projectResults.length)c.results.push({id:'projects-'+round,summary:'Ongoing national programs',results:projectResults});
   const owned=g.regions.filter(r=>r.owner===c.id),counts=Object.fromEntries(Object.keys(BUILDINGS).map(k=>[k,owned.reduce((s,r)=>s+(r.buildings[k]??0),0)]));
   const siteIncome=SITES.filter(s=>s.regions.every(id=>g.regions[id].owner===c.id)).reduce((s,p)=>s+p.bonus,0);
   const trade=g.agreements.filter(a=>a.status==='active'&&a.expires>=round&&a.parties.includes(c.id)&&a.terms.kind==='trade').length*25;
   const baseIncome=owned.length*35+(owned.length?Math.floor(c.economic/2):0)+counts.economic*40+counts.port*30+siteIncome+trade,income=Math.floor(baseIncome*(c.bonus==='income'?1.1:1)),upkeep=Object.entries(counts).reduce((s,[k,n])=>s+n*BUILDINGS[k].upkeep,0)+Math.ceil(deployedForces(g,c.id)*1.5+(totalForces(g,c.id)-deployedForces(g,c.id))*.5);
   cash(c,round,income,'Monthly income');const paid=Math.min(c.treasury,upkeep);cash(c,round,-paid,'Unit and building upkeep');if(paid<upkeep)g.publicEvents.push({round,country:c.id,headline:`${c.name} faces an operating-budget shortfall`,body:`Only $${paid} of $${upkeep} in unit and building upkeep was paid this month; shortfall $${upkeep-paid}.`});
   for(const l of c.loans.filter(l=>l.remaining>0)){const installment=l.monthsLeft<=1?Math.ceil(l.remaining*1.1):Math.min(l.installment,Math.ceil(l.remaining*1.1));if(c.treasury>=installment){cash(c,round,-installment,'Loan installment');if(g.countries[l.lender])cash(g.countries[l.lender],round,installment,'Loan repayment received');const principal=Math.min(l.remaining,Math.max(1,Math.floor(installment/1.1)));l.remaining-=principal;c.debt=Math.max(0,c.debt-principal);l.monthsLeft--;if(l.monthsLeft<=0&&l.remaining<=1){c.debt=Math.max(0,c.debt-l.remaining);l.remaining=0;}}else{c.political=cap(c.political-5);l.overdue=true;}}
-  c.oil+=owned.length*2+counts.refinery*12;c.fuel+=owned.length*3+counts.refinery*15;c.stability=Math.round((c.economic+c.political+c.social)/3);c.lastIncome=income;c.lastUpkeep=paid;c.lastSiteIncome=siteIncome;c.gdp=c.economic*20;
-  c.briefings.push({round,opening:opening[c.id],income,upkeep:paid,closing:c.treasury,results:clone(c.results),summary:`${owned.length} territories · ${deployedForces(g,c.id)} deployed + ${totalForces(g,c.id)-deployedForces(g,c.id)} reserve groups · stability ${c.stability}%`});
+  const supplyNeed=deployedForces(g,c.id),supplyOpening=c.supplies??100,supplyMade=owned.length*3+counts.factory*4;c.supplies=Math.max(0,supplyOpening+supplyMade-supplyNeed);c.lastSupplyUse=supplyNeed;c.ammo=(c.ammo??100)+counts.factory*4;c.spares=(c.spares??50)+counts.factory*2;
+  for(const r of owned)r.readiness=Math.min(c.readiness??100,supplyOpening+supplyMade>=supplyNeed?100:60);
+  c.oil+=owned.length*2+counts.refinery*12;c.fuel+=owned.length*3+counts.refinery*15;c.stability=Math.round((c.economic+c.political+c.social)/3);c.lastIncome=income;c.lastUpkeep=paid;c.lastSiteIncome=siteIncome;c.lastTradeIncome=trade;c.lastProductionIncome=counts.economic*40+counts.port*30;c.lastResourceOutput={oil:owned.length*2+counts.refinery*12,fuel:owned.length*3+counts.refinery*15};c.gdp=c.economic*20;
+  const monthLedger=c.ledger.filter(l=>l.round===round),inflows=monthLedger.filter(l=>l.amount>0).reduce((n,l)=>n+l.amount,0),expenditure=-monthLedger.filter(l=>l.amount<0).reduce((n,l)=>n+l.amount,0);c.lastExpenditure=expenditure;c.lastNetChange=c.treasury-opening[c.id];
+  c.briefings.push({round,opening:opening[c.id],income,inflows,expenditure,netChange:c.lastNetChange,projectOperations:c.lastProjectUpkeep??0,projectIncome:c.lastProjectIncome??0,upkeep:paid,closing:c.treasury,results:clone(c.results),summary:`${owned.length} territories · ${deployedForces(g,c.id)} deployed + ${totalForces(g,c.id)-deployedForces(g,c.id)} reserve groups · stability ${c.stability}%`});
   for(const [id,i] of Object.entries(c.intel))if(i.expires<round+1||g.regions[+id].owner!==i.controller)delete c.intel[id];
   for(const d of c.directives.filter(d=>d.round===round&&['review','awaiting_bank','clarification'].includes(d.status))){d.status='expired';d.results=['Not funded before month closed. No resources spent.'];}
  }
@@ -199,7 +209,7 @@ export function resolveSimple(input,{immediate=false,directiveId=null}={}){must(
  for(const r of g.regions)syncRegion(r);g.history.push({round,news:clone(g.news)});if(round>=g.maxRounds){g.phase='finished';g.winner=Object.values(g.countries).filter(c=>c.human).sort((a,b)=>(totalForces(g,b.id)+b.treasury/100+b.stability)-(totalForces(g,a.id)+a.treasury/100+a.stability))[0]?.id??null;}else{g.round++;g.phase='planning';}assertSimple(g);return g;
 }
 export function assertSimple(g){for(const c of Object.values(g.countries))for(const k of ['treasury','oil','fuel','debt'])must(Number.isSafeInteger(c[k])&&c[k]>=0,'Invalid national '+k);for(const c of Object.values(g.countries))for(const n of Object.values(c.reserves??{}))must(Number.isSafeInteger(n)&&n>=0,'Invalid reserve inventory');for(const r of g.regions)for(const n of Object.values(r.units))must(Number.isSafeInteger(n)&&n>=0,'Invalid unit inventory');}
-export function simpleView(g,cid){const c=g.countries[cid];return {ruleset:'simple',round:g.round,maxRounds:g.maxRounds,phase:g.phase,winner:g.winner,wars:clone(g.wars??[]),you:clone(c),regions:g.regions.map(r=>r.owner===cid?clone(r):{id:r.id,name:r.name,x:r.x,y:r.y,adjacent:r.adjacent,owner:r.owner,coastal:r.coastal,terrain:r.terrain,continent:r.continent,estimate:c.intel[r.id]&&c.intel[r.id].expires>=g.round&&c.intel[r.id].controller===r.owner?clone(c.intel[r.id]):null}),countries:Object.values(g.countries).map(x=>({id:x.id,name:x.name,color:x.color,human:x.human,advantage:x.advantage,forceProfile:x.forceProfile})),news:clone(g.news),publicBriefings:clone(g.publicBriefings??[]),publicEvents:clone((g.publicEvents??[]).filter(e=>e.round===g.round)),messages:clone(g.messages.filter(m=>m.from===cid||m.to===cid)),agreements:clone(g.agreements.filter(a=>a.parties.includes(cid))),fleets:[],missions:[],treaties:[]};}
+export function simpleView(g,cid){const c=g.countries[cid];return {ruleset:'simple',round:g.round,maxRounds:g.maxRounds,phase:g.phase,winner:g.winner,wars:clone(g.wars??[]),movements:clone((g.movements??[]).filter(m=>m.country===cid&&m.round>=g.round-1).slice(-20)),you:clone(c),regions:g.regions.map(r=>r.owner===cid?clone(r):{id:r.id,name:r.name,x:r.x,y:r.y,adjacent:r.adjacent,owner:r.owner,coastal:r.coastal,terrain:r.terrain,continent:r.continent,contestedUntil:r.contestedUntil??null,estimate:c.intel[r.id]&&c.intel[r.id].expires>=g.round&&c.intel[r.id].controller===r.owner?clone(c.intel[r.id]):null}),countries:Object.values(g.countries).map(x=>({id:x.id,name:x.name,color:x.color,human:x.human,advantage:x.advantage,forceProfile:x.forceProfile})),news:clone(g.news),publicBriefings:clone(g.publicBriefings??[]),publicEvents:clone((g.publicEvents??[]).filter(e=>e.round===g.round)),messages:clone(g.messages.filter(m=>m.from===cid||m.to===cid)),agreements:clone(g.agreements.filter(a=>a.parties.includes(cid))),fleets:[],missions:[],treaties:[]};}
 
 // Submission authorizes execution. Each clause is settled independently against live resources.
 function simulateSubmission(input,cid,{text,orders=[],assumptions=[],conditions=[],failures=[],questions=[],source='offline'}){
@@ -240,4 +250,21 @@ export function submitDirective(input,cid,plan){
  // Preserve the full commitment, including transfers awaiting diplomatic consent.
  d.cost={money:d.orders.reduce((s,o)=>s+o.cost,0),oil:d.orders.reduce((s,o)=>s+o.oil,0),fuel:d.orders.reduce((s,o)=>s+o.fuel,0),recurring:d.orders.reduce((s,o)=>s+o.recurring,0)};
  g.countries[cid].directives.push(d);return {game:g,directive:d};
+}
+
+// MUN mode: the authoritative settlement happens in the current round, not at month end.
+export function adjudicateDirective(input,cid,plan){
+ const physical=new Set(['move','attack','mobilize','reserve','scout','recruit','build','policy','message','loan','repay','war','treaty','agreement','initiative']);
+ const normalized={...plan,orders:(plan.orders??[]).map(o=>{
+  const custom=!physical.has(o?.action)||o.action==='policy'&&!['economic','political','social','intelligence'].includes(o.category)||o.action==='build'&&!Object.hasOwn(BUILDINGS,o.building)||o.action==='recruit'&&!Object.hasOwn(UNIT_TYPES,o.unit);
+  return custom?{action:'initiative',title:o?.title??o?.building??'National strategic initiative',intent:o?.intent??o?.purpose??plan.text,category:o?.category??(o?.action==='recruit'?'scientific':String(o?.action??'institutional')),target:o?.target,visibility:o?.visibility,budget:o?.budget??100,duration:o?.duration??2,effects:o?.effects??[]}:o;
+ })};
+ const unknownCondition=(normalized.conditions??[]).find(k=>!['treasury_at_least','owns','no_treaty'].includes(k.kind));
+ if(unknownCondition){normalized.conditions=[];normalized.orders=[{action:'initiative',title:'Conditional national mandate',intent:plan.text,budget:100,duration:2,visibility:/secret|confidential|covert/i.test(plan.text)?'secret':'public',trigger:JSON.stringify(unknownCondition),rationale:'The objective is retained as a conditional mandate. No implementation benefit is claimed until the external trigger can be verified; escrow is refundable.'}];}
+
+ const result=simulateSubmission(input,cid,normalized),d=result.directive;
+ d.adjudicated=true;d.analysis=String(plan.analysis??'The directive was assessed against the current treasury, military inventory, location and diplomatic position. Each clause below records the actual decision.').slice(0,3000);
+ d.assumptions.push(...d.orders.filter(o=>o.action==='initiative').flatMap(o=>o.adjustments??[]));
+ result.game.countries[cid].stability=Math.round((result.game.countries[cid].economic+result.game.countries[cid].political+result.game.countries[cid].social)/3);
+ return result;
 }

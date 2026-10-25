@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0
+
+- Exactly five named tabs, illustrated tabletop SVG board with original cartoon miniatures, private movement animations, flags, labels and conflict markers.
+- Same-round AI adjudication with generic persistent initiatives, validated effects, operating costs, delivery risk, site/consent checks and per-clause decisions.
+- Immediate diplomatic decisions and human accept/reject/counteroffer inbox; financial reports reconcile action and operating costs.
+- Illustrated WNN/private newspaper editions with month/topic filters and full reports; complete Bank ledger and stockpiles.
+- Optional Spotify soundtrack side link. Higgsfield sprite generation was requested but refused because the account requires a Basic plan; original SVG artwork remains.
+- Expanded persistence, finance, privacy, project lifecycle and live-model verification.
+
 ## 0.5.1
 
 - Added native Gemini provider for directives, diplomatic conversations and agreement extraction.

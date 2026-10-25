@@ -1,3 +1,15 @@
+# Current implementation — v0.6 crisis sandbox
+
+This supersedes the older interface/workflow descriptions below. Exactly five tabs now match the final direction. Immediate actions and project establishment are adjudicated in the current round; novel institutions/scientific/infrastructure/policy ideas persist through the general initiative/effect schema. The authoritative engine bounds effects, charges funds, checks site access/consent, progresses work, records failures/delivery, and prevents duplicate benefits on suspension/resumption. Reports and complete financial ledgers derive from actual committed records. The board uses original cartoon SVG miniatures and tabletop artwork, with private movement arrows and conflict/capture transitions. WNN and confidential editions provide filters, illustrated articles and full reports. Multiplayer revision checks, room tokens, duplicate-submission receipts and SQLite transactions remain.
+
+A real Gemini adjudication created a public Pelagic Civic Academy in Alaska ($200), a secret Blue Lantern Observatory in Western United States ($100), and an official message ($5), all in round 1. Treasury became $1,195; secret content did not appear in the other government projection. No API key was written to source or committed.
+
+A Spotify playlist link is beside the board. Higgsfield generation was attempted at its quoted 0.5-credit cost, but returned “Requires basic plan or higher.” No generation job or Higgsfield art was created. The existing original SVG miniature set remains functional.
+
+Open-ended ideas currently resolve through bounded general score, productivity, readiness, fortification and persistent-project effects. Independent submarine operations, a rich transport/cargo supply simulator, full dynamic international-reaction narratives, advanced victory/balance tuning and a production account/deployment system remain incomplete. Physical iPad/Safari FPS has not been measured. External conditions that cannot be verified are retained explicitly and expire/refund rather than inventing a trigger. See docs/v0.6-crisis-sandbox.md.
+
+## Earlier implementation history (superseded where noted above)
+
 # Gemini provider update — v0.5.1
 
 Gemini native generateContent support now powers all shared live AI features. Added provider selection, default gemini-3.1-flash-lite model, JSON output mode for directive/extraction calls, safe key/quota/model error messages and `npm run ai:check`. Setup instructions are in docs/gemini-setup.md. 87 tests and syntax/build checks pass locally. Live connectivity must be checked on the user's Mac with their private key; no key was received or committed.

@@ -1,6 +1,6 @@
 import {replyDiplomat} from '../../packages/simple-engine/diplomat.mjs';
 import {existsSync} from 'node:fs';
-import {seedSimple,simpleView,resolveSimple,submitDirective,makeDirective,decideDirective,reviewPlan,sendOfficial,proposeAgreement} from '../../packages/simple-engine/index.mjs';
+import {seedSimple,simpleView,resolveSimple,submitDirective,adjudicateDirective,makeDirective,decideDirective,reviewPlan,sendOfficial,proposeAgreement} from '../../packages/simple-engine/index.mjs';
 import {interpretLongDirective,extractAgreement} from '../../packages/simple-engine/planner.mjs';
 import {modelText} from '../../packages/ai-engine/service.mjs';
 import {parseMessageRequest,deliverMessage} from '../../packages/diplomacy-engine/messages.mjs';
@@ -60,7 +60,7 @@ export const server=http.createServer(async(req,res)=>{
     if(endpoint==='submit'||endpoint==='interpret'){
      active();room.directiveReceipts??={};const receiptKey=p.id+':'+data.requestId;if(data.requestId&&room.directiveReceipts[receiptKey])return send(200,{directive:room.game.countries[country].directives.find(d=>d.id===room.directiveReceipts[receiptKey]),room:roomView(room,p)});const expectedRound=room.game.round;const planned=await interpretLongDirective(room.game,country,data.text,{region:data.region});
      room=store.load(code);active();fail(room.game.round===expectedRound,'Month changed during analysis. Nothing was executed; submit in the new month');
-     room.directiveReceipts??={};if(data.requestId&&room.directiveReceipts[receiptKey])return send(200,{directive:room.game.countries[country].directives.find(d=>d.id===room.directiveReceipts[receiptKey]),room:roomView(room,p)});const settled=submitDirective(room.game,country,{text:data.text,...planned});room.game=settled.game;const directive=settled.directive;if(data.requestId)room.directiveReceipts[receiptKey]=directive.id;store.save(room,room.revision);return send(200,{directive,room:roomView(room,p)});
+     room.directiveReceipts??={};if(data.requestId&&room.directiveReceipts[receiptKey])return send(200,{directive:room.game.countries[country].directives.find(d=>d.id===room.directiveReceipts[receiptKey]),room:roomView(room,p)});const settled=adjudicateDirective(room.game,country,{text:data.text,...planned});room.game=settled.game;const directive=settled.directive;if(data.requestId)room.directiveReceipts[receiptKey]=directive.id;store.save(room,room.revision);return send(200,{directive,room:roomView(room,p)});
     }
     if(endpoint==='edit'){
      active();const d=room.game.countries[country].directives.find(d=>d.id===data.id);fail(d&&['review','awaiting_bank','clarification'].includes(d.status)&&d.round===room.game.round,'This directive cannot be edited');
@@ -79,11 +79,20 @@ export const server=http.createServer(async(req,res)=>{
      return send(200,roomView(room,p));
     }else if(endpoint==='extract-agreement'){
      active();fail(room.game.countries[data.country]&&data.country!==country,'Choose a recipient');const expectedRound=room.game.round,terms=await extractAgreement(room.game,country,data.country);room=store.load(code);active();fail(room.game.round===expectedRound,'Month changed; re-extract the agreement');
-     const settled=submitDirective(room.game,country,{text:'Diplomatic agreement: '+(terms.summary??terms.kind),orders:[{action:'treaty',country:data.country,...terms}],assumptions:['Submitted from the conversation; counterpart consent remains required.']});room.game=settled.game;store.save(room,room.revision);return send(200,{directive:settled.directive,room:roomView(room,p)});
+     const settled=adjudicateDirective(room.game,country,{text:'Diplomatic agreement: '+(terms.summary??terms.kind),orders:[{action:'treaty',country:data.country,...terms}],assumptions:['Submitted from the conversation; counterpart consent remains required.']});room.game=settled.game;store.save(room,room.revision);return send(200,{directive:settled.directive,room:roomView(room,p)});
+    }else if(endpoint==='respond-agreement'){
+     active();const a=room.game.agreements.find(a=>a.id===data.id&&a.parties.includes(country)&&['offered','counteroffer'].includes(a.status));fail(a,'Agreement unavailable');
+     if(data.decision==='reject'){a.status='rejected';a.responseReason='Declined by '+room.game.countries[country].name;sendOfficial(room.game,country,a.parties.find(id=>id!==country),'We reject '+a.title+'.');}
+     else if(data.decision==='counter'){const amount=Number(data.amount),months=Number(data.months);fail(Number.isSafeInteger(amount)&&amount>=0&&amount<=1000&&Number.isSafeInteger(months)&&months>=1&&months<=12,'Invalid counteroffer');a.status='rejected';const settled=adjudicateDirective(room.game,country,{text:'Counteroffer to '+a.title,orders:[{action:'treaty',country:a.parties.find(id=>id!==country),kind:a.counterTerms?.kind??a.terms.kind,from:a.terms.from,amount,months}]});room.game=settled.game;}
+     else if(data.decision==='accept'){
+      fail(a.status==='counteroffer'||!a.consent.includes(country),'You have already consented; the other government must respond');
+      if(a.status==='counteroffer'){const settled=adjudicateDirective(room.game,country,{text:'Accept diplomatic counteroffer',orders:[{action:'treaty',country:a.parties.find(id=>id!==country),...a.counterTerms}]});room.game=settled.game;room.game.agreements.find(x=>x.id===a.id).status='superseded';}
+      else{const settled=adjudicateDirective(room.game,country,{text:'Accept '+a.title,orders:[{action:'agreement',agreement:a.id}]});room.game=settled.game;}
+     }else throw new Error('Choose accept, reject or counter');
     }else if(endpoint==='review-agreement'){
      active();const a=room.game.agreements.find(a=>a.id===data.id&&a.parties.includes(country)&&a.status==='offered');fail(a,'Agreement unavailable');
      const existing=room.game.countries[country].directives.find(d=>d.round===room.game.round&&d.status==='funded'&&d.orders.some(o=>o.action==='agreement'&&o.agreement===a.id));if(existing)return send(200,roomView(room,p));
-     const settled=submitDirective(room.game,country,{text:'Accept '+a.title,orders:[{action:'agreement',agreement:a.id}]});room.game=settled.game;
+     const settled=adjudicateDirective(room.game,country,{text:'Accept '+a.title,orders:[{action:'agreement',agreement:a.id}]});room.game=settled.game;
     }else throw new Error('Unknown simplified endpoint');
     store.save(room,room.revision);return send(200,roomView(room,p));
    }
