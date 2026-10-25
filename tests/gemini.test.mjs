@@ -27,3 +27,9 @@ test('temporary Gemini server failures retry safely, preserve HTTP status and ne
  let calls=0;const r=await modelText({env,input:{},instructions:'Test',retryDelay:async()=>{},fetchImpl:async()=>{calls++;return calls<3?{ok:false,status:503}:response('OK');}});assert.equal(calls,3);assert.equal(r.text,'OK');
  calls=0;const failed=await modelText({env,input:{},instructions:'Test',retryDelay:async()=>{},fetchImpl:async()=>{calls++;return {ok:false,status:503};}});assert.equal(calls,3);assert.ok(failed.reason.includes('HTTP 503'));assert.ok(!failed.reason.includes('Local fallback'));assert.equal(failed.text,null);
 });
+
+ test('complex requests can use a longer timeout and incomplete outputs identify a safe reason',async()=>{
+ const previous=AbortSignal.timeout;let timeout;AbortSignal.timeout=ms=>{timeout=ms;return previous(ms);};
+ try {const out=await modelText({env,input:{},instructions:'Chair',timeoutMs:45000,fetchImpl:async()=>response('OK')});assert.equal(out.text,'OK');assert.equal(timeout,45000);}finally{AbortSignal.timeout=previous;}
+ const out=await modelText({env,input:{},instructions:'Chair',fetchImpl:async()=>({ok:true,json:async()=>({candidates:[{finishReason:'MAX_TOKENS'}]})})});assert.match(out.reason,/MAX_TOKENS/);assert.equal(out.text,null);
+ });
