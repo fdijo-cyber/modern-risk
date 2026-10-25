@@ -1,3 +1,19 @@
+# v0.7.1 — Faster game decisions and adaptive war responses
+
+A short “Attack Central America” order is sufficient for the Chair. Missing origins select an adjacent owned territory, missing formations select available forces, and unaffordable commitments are reduced with ground troops taking priority. An explicitly named origin/target is preserved; no resources or units are created. Geography, actual available troops and minimum funding still matter. Starting an operation is easier; victory is not guaranteed. Chair attacks now cost $12 per committed group instead of $20, with oil/fuel multipliers of 0.75 rounded up per group. Conventional fictional aggression is treated as legitimate gameplay, rather than rejected for moral objections. Real-world operational harm instructions remain outside this simulation.
+
+An attack or war declaration can violate an existing peace/alliance. The agreement becomes violated and the attacker loses three political-index points per breached agreement. This replaces a hard veto with a recorded game consequence.
+
+The map’s **Plan attack** button fills a short directive for confirmation in Presidential Office. New public combat events drive brief target ripples, flashes and capture captions. The renderer creates each effect once per mounted map, bounds visible effects and respects reduced-motion preferences. It exposes no hidden inventory. Physical iPad FPS has not been measured.
+
+AI defenders choose from worldwide broadcasts, diplomatic appeals, war-weariness campaigns, emergency reserve deployments, domestic rallies and scorched-withdrawal resource denial. Selection uses scenario seed, month, actual treasury, reserve availability and whether territory was captured. An AI responds at most once per attacker per month; a human government is not automatically controlled. Responses charge real dollars and, where applicable, fuel/oil. They appear in correspondence and public committed events. Political/social effects are bounded, and migration pressure is a simulated indicator rather than guaranteed civilian movement or a source of troops.
+
+Resource denial can remove one captured industrial installation, reduce occupation readiness and impose a $25 monthly recovery expense through the following month. It costs the retreating government $35 plus five oil and five fuel, so it is neither free nor permanent. Reserve deployments transfer real personnel from reserve. Broadcast reach can fail; appeals do not fabricate foreign consent. Autonomous AI offensives now vary their timing, use recorded reconnaissance and prioritize lost/contested frontier opportunities.
+
+Validation: 117 automated tests and build checks pass. The current five-objective fixture spends $402, 18 oil, 24 fuel and seven ammunition; its invasion still loses. This is deliberately easier to commence, not an automatic-win mode. Provider interpretation is tested with deterministic transport fixtures; no new live Gemini call is claimed.
+
+---
+
 # Crisis Chair — v0.7
 
 ## Active workflow

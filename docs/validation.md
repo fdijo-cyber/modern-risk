@@ -1,3 +1,7 @@
+# v0.7.1 validation
+
+117 automated tests pass. New tests verify short attack orders, actual inferred deployments, $12/group costs, affordable downscaling, treaty violation consequences, seeded variation across all six AI responses, payment limits, reserve conservation, and real temporary infrastructure recovery costs. Build/syntax checks pass. Visual effects are finite and reduced-motion-aware; no physical-device FPS benchmark or new live Gemini check was performed. Earlier release evidence follows.
+
 # v0.7 Crisis Chair validation
 
 111 automated tests pass, including nine dedicated Chair tests. Build checks pass. The deterministic five-objective scenario spends $450 (treasury $1,500 → $1,050), 21 oil, 28 fuel and 7 ammunition. Its invasion is defeated with one infantry group, one tank group and one fighter group lost; the blockade and development-bank project continue, and the procurement policy is persisted. Those are actual engine outcomes, not a model’s narrated victory.

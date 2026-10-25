@@ -52,7 +52,7 @@ test('blockade deployment is conserved, drains actual revenue, expires and retur
 
 test('a defeated operation still pays costs and records exact losses; phases do not claim absent equipment',()=>{
  let g=world();g.regions[8].units.infantry=90;const before=structuredClone(g),p={kind:'directive',analysis:'Attempt the offensive without nonexistent bombers',objectives:[obj('attack',{action:'operation',origin:6,target:8,units:{infantry:3,bombers:1}})]};
- const r=submitChair(g,'us','Attack with available infantry and bomber support',p);g=r.game;assert.equal(r.directive.objectives[0].outcome,'unsuccessful');assert.equal(g.regions[8].owner,before.regions[8].owner);assert.equal(g.countries.us.treasury,1440);assert.equal(g.countries.us.ammo,97);assert.equal(r.directive.cost.money,60);
+ const r=submitChair(g,'us','Attack with available infantry and bomber support',p);g=r.game;assert.equal(r.directive.objectives[0].outcome,'unsuccessful');assert.equal(g.regions[8].owner,before.regions[8].owner);assert.equal(g.countries.us.treasury,1464);assert.equal(g.countries.us.ammo,97);assert.equal(r.directive.cost.money,36);
  const b=g.countries.us.battleReports[0];assert.ok(b.phases.some(p=>p.phase==='air operations'&&p.outcome==='unavailable'));assert.equal(g.regions[6].units.infantry,before.regions[6].units.infantry-b.ownLosses.infantry);assert.equal(g.regions[6].personnel,g.regions[6].units.infantry*1000+g.regions[6].units.special*100);
 });
 test('an unaffordable combat objective does not delete older unfunded directives or charge an invented expense',()=>{

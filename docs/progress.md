@@ -1,3 +1,7 @@
+# Current: v0.7.1 game-first attacks and war feedback
+
+Short attack directives now infer available formations and a valid adjacent origin. Map territory panels include Plan attack. Defender reactions use six context-dependent seeded response types with real balances and persistent consequences. See the v0.7.1 section in [Crisis Chair](crisis-chair.md). Existing saves use additive optional fields.
+
 # Current: v0.7 Crisis Chair
 
 The active submit route now uses `packages/simple-engine/chair.mjs`; the v0.6 immediate fixed-order interpreter is retained only for compatibility and primitive settlement. See [Crisis Chair](crisis-chair.md) for current behavior, validation and remaining limits. Earlier progress entries below describe earlier versions.

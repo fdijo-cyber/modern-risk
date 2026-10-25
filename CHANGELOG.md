@@ -1,3 +1,10 @@
+# v0.7.1
+
+- Short attack decisions infer an adjacent owned origin and available troops; budget pressure scales forces down rather than cancelling an affordable offensive. Chair operations cost $12/group and use reduced game resource costs. War can breach peace/alliance terms with an explicit political penalty.
+- The map adds a Plan attack shortcut and brief battle/capture effects with reduced-motion support and no heavy filters.
+- AI defenders choose affordable, seeded broadcasts, diplomatic appeals, war-weariness campaigns, reserve surges, national rallies or resource-denial withdrawals. Responses have persistent costs and bounded effects; recovery penalties expire. Autonomous offensives prioritize observed opportunities and contested territory.
+- 117 automated tests pass; new cases cover simple orders, scaled budgets, treaty breach, varied deterministic defensive decisions and actual infrastructure recovery costs.
+
 # v0.7.0
 
 - Structured Crisis Chair objective graph, constrained schema correction, persistent historical retrieval and read-only explanations.
