@@ -1,11 +1,11 @@
 # v0.7.2
 
 - Persistent per-formation health, experience, recovery, terrain familiarity, supply and weaponry now affect Chair combat. Wounds follow movement, reserves, blockades and retreats; depleted formations are removed.
-- Sustained combat deals 42–63 health damage per engagement, targeting two to three monthly battles for unsupported formations. Monthly funded recovery is six points, falling to two in a financial crisis.
+- Sustained combat deals strength-scaled health damage per engagement, targeting two to three monthly battles for unsupported formations. Monthly funded recovery is six points, falling to two in a financial crisis.
 - Paid training courses and successfully completed training initiatives improve real experience and terrain familiarity without creating troops. AI governments can train and consider their own unit condition when planning attacks.
 - New matches default to a one-hour monthly timer; existing room timers remain intact.
 - Gemini temporary server failures receive up to two retries. Failure messages report HTTP status without provider bodies or keys and no longer claim a local outcome occurred.
-- 125 automated tests and build checks pass.
+- 126 automated tests and build checks pass.
 
 # v0.7.1
 

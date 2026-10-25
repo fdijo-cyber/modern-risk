@@ -1,6 +1,6 @@
 # v0.7.2 validation
 
-125 automated tests and build checks pass. Seven condition tests verify native terrain and novice defaults, two-to-three-engagement attrition, actual battle wounds and destruction, movement/reserve identity preservation, paid training, training-initiative benefits applying once, and crisis-dependent equipment/recovery. Provider tests verify retries and explicit HTTP errors without secrets or fabricated local outcomes. No new live Gemini call or wall-clock one-hour wait is claimed. Existing multiplayer, SQLite, accounting, secrecy and map regressions remain covered. Earlier release evidence follows.
+126 automated tests and build checks pass. Eight condition tests verify native terrain and novice defaults, two-to-three-engagement attrition, actual battle wounds and destruction, movement/reserve identity preservation, paid training, training-initiative benefits applying once, and crisis-dependent equipment/recovery. Provider tests verify retries and explicit HTTP errors without secrets or fabricated local outcomes. No new live Gemini call or wall-clock one-hour wait is claimed. Existing multiplayer, SQLite, accounting, secrecy and map regressions remain covered. Earlier release evidence follows.
 
 # v0.7.1 validation
 

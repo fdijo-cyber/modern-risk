@@ -38,3 +38,7 @@ test('a completed funded training initiative grants experience once and persists
  // The seeded fixture delivers this project; only completed, paid work can train troops.
  g=resolveSimple(g,{skipAutonomous:true});const p=g.countries.us.initiatives[0];assert.equal(p.status,'completed');assert.equal(p.trainingApplied,true);const id=g.regions[6].formations.infantry[0].id,experience=g.regions[6].formations.infantry[0].experience;assert.equal(experience,10);g=resolveSimple(g,{skipAutonomous:true});assert.equal(g.regions[6].formations.infantry.find(f=>f.id===id).experience,experience);
 });
+
+test('an overwhelmingly weak attack cannot damage an entire larger army like an equal-strength battle',()=>{
+ const g=world();g.regions[6].units.infantry=5;g.regions[8].units.infantry=90;ensureFormations(g);const r=submitChair(g,'us','Small attack',{kind:'directive',analysis:'Unequal forces',objectives:[{id:'attack',title:'Attack',order:{action:'operation',origin:6,target:8,units:{infantry:1}}}]});assert.ok(r.game.regions[8].formations.infantry.every(f=>f.health>80));
+});
