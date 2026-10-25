@@ -1,3 +1,7 @@
+# Current: v0.7 Crisis Chair
+
+The active submit route now uses `packages/simple-engine/chair.mjs`; the v0.6 immediate fixed-order interpreter is retained only for compatibility and primitive settlement. See [Crisis Chair](crisis-chair.md) for current behavior, validation and remaining limits. Earlier progress entries below describe earlier versions.
+
 # Current implementation — v0.6 crisis sandbox
 
 This supersedes the older interface/workflow descriptions below. Exactly five tabs now match the final direction. Immediate actions and project establishment are adjudicated in the current round; novel institutions/scientific/infrastructure/policy ideas persist through the general initiative/effect schema. The authoritative engine bounds effects, charges funds, checks site access/consent, progresses work, records failures/delivery, and prevents duplicate benefits on suspension/resumption. Reports and complete financial ledgers derive from actual committed records. The board uses original cartoon SVG miniatures and tabletop artwork, with private movement arrows and conflict/capture transitions. WNN and confidential editions provide filters, illustrated articles and full reports. Multiplayer revision checks, room tokens, duplicate-submission receipts and SQLite transactions remain.

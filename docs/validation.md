@@ -1,3 +1,9 @@
+# v0.7 Crisis Chair validation
+
+111 automated tests pass, including nine dedicated Chair tests. Build checks pass. The deterministic five-objective scenario spends $450 (treasury $1,500 → $1,050), 21 oil, 28 fuel and 7 ammunition. Its invasion is defeated with one infantry group, one tank group and one fighter group lost; the blockade and development-bank project continue, and the procurement policy is persisted. Those are actual engine outcomes, not a model’s narrated victory.
+
+The current acceptance suite covers structured interpretation, five-objective real settlement, failure costs, historical questions without effects, simultaneous sealed submissions, conservation of blockading fleets, provider/schema failure, actual human consent and authorized branch continuation, and independent government records. HTTP tests use an isolated Gemini transport fixture with real sessions and SQLite transactions. No new live-provider or physical-device performance claim is made. See [Crisis Chair](crisis-chair.md).
+
 # v0.6 validation
 
 - **102 automated tests passed** locally, with syntax/build checks passing. Existing engine, multiplayer API and SQLite transaction regressions remain green.

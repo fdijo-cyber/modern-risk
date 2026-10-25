@@ -1,3 +1,11 @@
+# v0.7.0
+
+- Structured Crisis Chair objective graph, constrained schema correction, persistent historical retrieval and read-only explanations.
+- Sealed multiplayer submissions from a common monthly snapshot; batched offensives detach troops before combat, independent of HTTP arrival order.
+- Partial-support combined-arms operations, actual phased combat outcomes, paid naval blockades, monthly interdiction and conserved surviving fleets.
+- Persistent objective outcomes, exact committed costs, classified reports and public event-backed articles. API failures defer without synthetic completed outcomes.
+- All five tabs and existing SQLite/authentication/session mechanisms retained.
+
 # Changelog
 
 ## 0.6.0
